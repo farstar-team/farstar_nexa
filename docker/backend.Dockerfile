@@ -5,6 +5,9 @@ COPY backend/requirements.lock /app/requirements.lock
 RUN pip install --no-cache-dir -r requirements.lock && useradd --uid 10001 --create-home nexa
 COPY backend /app/backend
 COPY VERSION /app/VERSION
+# The installer intentionally uses umask 077. Make non-secret application
+# sources readable by the unprivileged runtime user inside the image.
+RUN chmod -R a+rX /app/backend && chmod a+r /app/VERSION
 RUN pip install --no-cache-dir --no-deps /app/backend
 WORKDIR /app/backend
 USER 10001:10001
