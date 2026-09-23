@@ -30,7 +30,10 @@ def recover_stale(db):
                 )
                 db.execute(
                     update(Execution)
-                    .where(Execution.id == job.payload["execution_id"], Execution.status.in_(["queued", "sending"]))
+                    .where(
+                        Execution.id == job.payload["execution_id"],
+                        Execution.status.in_(["queued", "sending"]),
+                    )
                     .values(status="unknown")
                 )
         else:
@@ -76,10 +79,19 @@ def run_one() -> bool:
             )
             job.available_at = utcnow() + timedelta(seconds=2**job.attempts)
             if job.kind == "send":
-                db.execute(update(Message).where(Message.id == job.payload["message_id"],
-                    Message.status.in_(["queued", "sending"])).values(status="unknown"))
-                db.execute(update(Execution).where(Execution.id == job.payload["execution_id"],
-                    Execution.status.in_(["queued", "sending"])).values(status="unknown"))
+                db.execute(
+                    update(Message)
+                    .where(Message.id == job.payload["message_id"], Message.status.in_(["queued", "sending"]))
+                    .values(status="unknown")
+                )
+                db.execute(
+                    update(Execution)
+                    .where(
+                        Execution.id == job.payload["execution_id"],
+                        Execution.status.in_(["queued", "sending"]),
+                    )
+                    .values(status="unknown")
+                )
             db.commit()
             log.error(json.dumps({"event": "job_failed", "job": job.id, "error_type": type(exc).__name__}))
         return True

@@ -1,12 +1,12 @@
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select
 from conftest import PASSWORD
 from nexa.db import utcnow
 from nexa.models import OneTimeToken, TelegramLink, User
 from nexa.security import consume_token, decrypt, digest, encrypt, issue_token
 from nexa.telegram import handle_update
+from sqlalchemy import select
 
 
 def test_integration_config_is_encrypted_and_never_returned(owner, db):
