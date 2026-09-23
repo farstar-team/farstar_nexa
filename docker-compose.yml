@@ -1,0 +1,101 @@
+name: farstarnexa
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: docker/backend.Dockerfile
+  image: farstarnexa-backend:${NEXA_RELEASE:-local}
+  env_file:
+    - ${NEXA_ENV_FILE:-.env}
+  restart: unless-stopped
+  init: true
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  read_only: true
+  tmpfs: [/tmp]
+  networks: [internal]
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: "3"}
+
+services:
+  postgres:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nexa
+      POSTGRES_DB: nexa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes: ["${DATA_DIR:-./runtime}/postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U nexa -d nexa"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [internal]
+  redis:
+    image: redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    restart: unless-stopped
+    command: [redis-server, --appendonly, "yes", --maxmemory, 128mb, --maxmemory-policy, noeviction]
+    volumes: ["${DATA_DIR:-./runtime}/redis:/data"]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [internal]
+  migrate:
+    <<: *backend
+    restart: "no"
+    command: [alembic, upgrade, head]
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    <<: *backend
+    volumes:
+      - ${DATA_DIR:-./runtime}/operations:/runtime/operations
+      - ${DATA_DIR:-./runtime}/backups:/runtime/backups:ro
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  worker:
+    <<: *backend
+    command: [python, -m, nexa.worker]
+    stop_grace_period: 40s
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import os,redis; assert redis.Redis.from_url(os.environ['REDIS_URL']).get('nexa:worker:heartbeat')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    image: farstarnexa-frontend:${NEXA_RELEASE:-local}
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: [internal]
+  proxy:
+    image: caddy:2-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
+    restart: unless-stopped
+    ports:
+      - ${HTTP_BIND:-127.0.0.1:8080}:80
+      - ${HTTPS_BIND:-127.0.0.1:8443}:443
+    environment:
+      CADDY_SITE: ${CADDY_SITE:-:80}
+    volumes:
+      - ${DATA_DIR:-./runtime}/proxy:/etc/caddy:ro
+      - ${DATA_DIR:-./runtime}/caddy-data:/data
+      - ${DATA_DIR:-./runtime}/caddy-config:/config
+    depends_on: [api, frontend]
+    networks: [internal]
+networks:
+  internal:

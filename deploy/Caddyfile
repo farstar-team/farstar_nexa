@@ -1,0 +1,20 @@
+{$CADDY_SITE:localhost} {
+    request_body {
+        max_size 1MB
+    }
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy no-referrer
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        Content-Security-Policy "default-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        -Server
+    }
+    @backend path /api/* /webhooks/* /health /ready
+    handle @backend {
+        reverse_proxy api:8000
+    }
+    handle {
+        reverse_proxy frontend:8080
+    }
+}
