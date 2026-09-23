@@ -8,9 +8,8 @@ import time
 import uuid
 
 import operations
-from nexa_ops.protocol import atomic_json, sign, validate_operation
-
 import runtime as rt
+from nexa_ops.protocol import atomic_json, sign, validate_operation
 
 
 class ProgressWriter(io.TextIOBase):

@@ -46,7 +46,7 @@ services:
   migrate:
     <<: *backend
     restart: "no"
-    command: [alembic, upgrade, head]
+    command: [python, -m, nexa.migrate]
     depends_on:
       postgres: {condition: service_healthy}
   api:

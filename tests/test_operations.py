@@ -9,8 +9,9 @@ import pytest
 from conftest import PASSWORD
 from nexa.config import Settings
 from nexa.db import engine
-from nexa_ops.protocol import canonical, sign, validate_metadata, validate_operation
 from sqlalchemy import inspect, text
+
+from nexa_ops.protocol import canonical, sign, validate_metadata, validate_operation
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "cli"))
 from backups import validate_archive  # noqa: E402

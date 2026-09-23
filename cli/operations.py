@@ -6,9 +6,8 @@ import urllib.request
 from datetime import UTC, datetime
 
 import backups
-from nexa_ops.protocol import DOMAIN, RELEASE
-
 import runtime as rt
+from nexa_ops.protocol import DOMAIN, RELEASE
 
 
 def check_update():

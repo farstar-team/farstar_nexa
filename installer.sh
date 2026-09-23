@@ -81,7 +81,11 @@ export NEXA_RELEASE
 NEXA_RELEASE=$(cat /opt/farstarnexa/current/VERSION)
 cd /opt/farstarnexa/current
 docker compose --env-file "$NEXA_ENV_FILE" build
-docker compose --env-file "$NEXA_ENV_FILE" up -d
+if ! docker compose --env-file "$NEXA_ENV_FILE" up -d; then
+    echo 'Farstar Nexa services failed to start. Migration and database logs follow:' >&2
+    docker compose --env-file "$NEXA_ENV_FILE" logs --no-color --tail 100 migrate postgres >&2 || true
+    exit 1
+fi
 farstarnexa start
 farstarnexa doctor
 echo 'Create the first owner account. Existing installations keep their owner account.'

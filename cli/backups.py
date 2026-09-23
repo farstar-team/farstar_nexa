@@ -9,9 +9,8 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
-from nexa_ops.protocol import BACKUP_NAME, atomic_json, validate_metadata
-
 import runtime as rt
+from nexa_ops.protocol import BACKUP_NAME, atomic_json, validate_metadata
 
 
 def checksum(path: Path) -> str:
