@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
-import { Badge, Field, Form } from "../components";
+import { Badge, ErrorNotice, Field, Form } from "../components";
 import { t } from "../i18n";
 
 const names = [
@@ -14,12 +14,33 @@ const names = [
 export default function IntegrationSettings() {
   const query = useQuery({
     queryKey: ["integration-settings"],
-    queryFn: () => api<Record<string, boolean>>("/admin/integrations"),
+    queryFn: () =>
+      api<
+        Record<string, boolean> & {
+          public_urls: Record<string, string>;
+        }
+      >("/admin/integrations"),
   });
   return (
     <section className="card operation-history">
       <h2>{t("config")}</h2>
       <p>{t("integrationConfigHint")}</p>
+      <ErrorNotice error={query.error} />
+      <h3>{t("integrationUrls")}</h3>
+      <p>{t("integrationUrlsHint")}</p>
+      <div className="form-grid">
+        {Object.entries(query.data?.public_urls ?? {}).map(([key, value]) => (
+          <Field label={key} key={key}>
+            <input
+              value={value}
+              readOnly
+              dir="ltr"
+              onFocus={(event) => event.currentTarget.select()}
+            />
+          </Field>
+        ))}
+      </div>
+      <div className="card-divider" />
       <Form
         submit={async (data) => {
           const values = Object.fromEntries(

@@ -1,9 +1,10 @@
 import os
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from cryptography.fernet import Fernet
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,6 +29,34 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_bot_username: str = ""
     telegram_webhook_secret: str = ""
+
+    @field_validator("base_url")
+    @classmethod
+    def validate_base_url(cls, value: str) -> str:
+        value = value.strip().rstrip("/")
+        parsed = urlsplit(value)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("BASE_URL must be an HTTP(S) origin without credentials or a path")
+        # Accessing port also validates malformed or out-of-range ports.
+        parsed.port
+        return value
+
+    @property
+    def public_urls(self) -> dict[str, str]:
+        return {
+            "base_url": self.base_url,
+            "instagram_callback": self.base_url + "/api/instagram/callback",
+            "meta_webhook": self.base_url + "/webhooks/meta",
+            "telegram_webhook": self.base_url + "/webhooks/telegram",
+        }
 
     @model_validator(mode="after")
     def validate_security(self):

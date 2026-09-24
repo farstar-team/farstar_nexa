@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1] - 2026-09-24
+
+- Centralized public integration URLs under the existing `BASE_URL` configuration and validated its origin format.
+- Added current OAuth and webhook URLs to the owner integration settings panel without exposing credentials.
+- Clarified the Persian message shown when Instagram integration is not configured.
+- Added coverage for domain replacement, secure session cookies and logout revocation.
+- Includes installer migration retries and image permissions fixes for restrictive host umasks.
+
 ## [0.1.0] - 2026-09-23
 
 Initial Farstar Nexa foundation release.

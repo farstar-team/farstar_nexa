@@ -225,7 +225,14 @@ export const fa: Record<string, string> = {
   account_exists: "این نام کاربری یا ایمیل قبلاً ثبت شده است.",
   rate_limited: "تعداد تلاش‌ها زیاد است. چند دقیقه دیگر امتحان کنید.",
   temporarily_unavailable: "سرویس موقتاً در دسترس نیست.",
-  meta_not_configured: "تنظیمات اتصال رسمی Meta هنوز کامل نشده است.",
+  meta_not_configured: "اتصال اینستاگرام هنوز توسط مدیر سیستم فعال نشده است.",
+  integrationUrls: "آدرس‌های اتصال سرویس‌ها",
+  integrationUrlsHint:
+    "این آدرس‌ها از دامنه فعلی سیستم ساخته می‌شوند. پس از تغییر دامنه، آدرس‌های ثبت‌شده در Meta را هم به‌روزرسانی کنید.",
+  base_url: "آدرس عمومی پنل",
+  instagram_callback: "آدرس بازگشت اینستاگرام (OAuth)",
+  meta_webhook: "آدرس وب‌هوک Meta",
+  telegram_webhook: "آدرس وب‌هوک تلگرام",
   telegram_not_configured: "ربات تلگرام هنوز پیکربندی نشده است.",
   operations_agent_offline:
     "سرویس مدیریت سرور در دسترس نیست. نصب و وضعیت agent را بررسی کنید.",

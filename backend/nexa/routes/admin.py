@@ -33,7 +33,10 @@ class IntegrationInput(BaseModel):
 @router.get("/integrations")
 def integration_config(user: User = Depends(require("system.manage"))):
     config = integration_settings()
-    return {key: bool(getattr(config, key)) for key in sorted(FIELDS)}
+    return {
+        **{key: bool(getattr(config, key)) for key in sorted(FIELDS)},
+        "public_urls": config.public_urls,
+    }
 
 
 @router.put("/integrations")

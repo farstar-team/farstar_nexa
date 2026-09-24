@@ -59,7 +59,7 @@ def configure_webhook():
     bot_call(
         "setWebhook",
         {
-            "url": config.base_url + "/webhooks/telegram",
+            "url": config.public_urls["telegram_webhook"],
             "secret_token": config.telegram_webhook_secret,
             "allowed_updates": ["message", "callback_query"],
         },

@@ -30,6 +30,14 @@ Caddy performs certificate issuance and renewal automatically. `farstarnexa ssl`
 
 ## Updates
 
+### Replacing a temporary domain
+
+Point the new domain to this server and run `sudo farstarnexa domain NEW_DOMAIN` (use a hostname without a scheme or path). This updates the existing `BASE_URL` in `/etc/farstarnexa/nexa.env`, enables secure cookies and production mode, and lets the same Caddy instance obtain a certificate. It does not reinstall the application or remove database, Redis, configuration, or integration records. Cookies belong to the old domain, so users sign in again on the new one.
+
+The owner integration settings panel displays URLs derived from the current `BASE_URL`: `/api/instagram/callback`, `/webhooks/meta`, and `/webhooks/telegram`. Update the OAuth redirect URI and webhook callback in Meta Developer settings after a domain change. Keep the existing verification token private. For Telegram credentials stored through the panel, run `sudo farstarnexa telegram-webhook` after changing the domain; environment-configured bots are handled by the domain command. Verify public HTTPS and `/ready` after every change. Do not put deployment domains into source files.
+
+### Installing a release
+
 `check-update` reads the official GitHub latest release and reports when none exists. `update vX.Y.Z` accepts only a newer semantic release tag from the fixed official repository. It checks disk space, clones to a new release directory, verifies VERSION, builds images before downtime, creates a pre-update backup, stops writers, migrates forward, starts new containers, and tests readiness before switching the current-release symlink. Configuration and bind-mounted data remain outside source directories. Never run `git reset --hard` over a production installation or replace a database with repository content.
 
 Update failure retains the old `current` symlink and pre-update backup but may leave the database migrated. Writers are stopped. Old code must not be started against an incompatible schema. For recovery:

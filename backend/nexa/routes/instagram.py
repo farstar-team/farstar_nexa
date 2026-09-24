@@ -24,7 +24,7 @@ def authorize(user: User = Depends(current_user), db: Session = Depends(get_db))
     db.commit()
     params = {
         "client_id": config.meta_app_id,
-        "redirect_uri": config.base_url + "/api/instagram/callback",
+        "redirect_uri": config.public_urls["instagram_callback"],
         "response_type": "code",
         "scope": "instagram_business_basic,instagram_business_manage_messages",
         "state": state,
@@ -52,7 +52,7 @@ def callback(request: Request, user: User = Depends(current_user), db: Session =
                     "client_id": config.meta_app_id,
                     "client_secret": config.meta_app_secret,
                     "grant_type": "authorization_code",
-                    "redirect_uri": config.base_url + "/api/instagram/callback",
+                    "redirect_uri": config.public_urls["instagram_callback"],
                     "code": code,
                 },
             )
