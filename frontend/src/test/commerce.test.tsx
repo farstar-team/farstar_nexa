@@ -44,6 +44,10 @@ const product = {
   },
   url: "",
   custom_fields: {},
+  media_count: 1,
+  automation_count: 1,
+  created_at: "2026-09-25T10:00:00Z",
+  updated_at: "2026-09-25T11:00:00Z",
 };
 const media = {
   id: "media-1",
@@ -182,11 +186,38 @@ describe("commerce user workflows", () => {
     );
   });
   it("opens an existing product editor", async () => {
-    const { user } = setup(<Products />);
+    const { user, calls } = setup(<Products />);
     await screen.findByText("تور دبی");
-    await user.click(screen.getByRole("button", { name: "ویرایش محصول" }));
+    expect(screen.getByText(/1 محتوای متصل/)).toBeTruthy();
+    expect(screen.getByText(/1 اتوماسیون/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "غیرفعال کردن" }));
+    await user.click(screen.getByRole("button", { name: "تأیید" }));
+    await waitFor(() =>
+      expect(
+        calls.some(
+          (call) =>
+            call.path === "/api/products/product-1" &&
+            call.method === "PUT" &&
+            call.body.status === "INACTIVE",
+        ),
+      ).toBe(true),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "مشاهده و ویرایش محصول" }),
+    );
     expect((screen.getByLabelText("قیمت پایه") as HTMLInputElement).value).toBe(
       "250",
+    );
+    await user.click(screen.getByRole("button", { name: "بستن" }));
+    await user.click(screen.getByRole("button", { name: "حذف امن" }));
+    await user.click(screen.getByRole("button", { name: "تأیید" }));
+    await waitFor(() =>
+      expect(
+        calls.some(
+          (call) =>
+            call.path === "/api/products/product-1" && call.method === "DELETE",
+        ),
+      ).toBe(true),
     );
   });
   it("links selected media to a product", async () => {
@@ -267,7 +298,7 @@ describe("commerce user workflows", () => {
         config={{
           mock_mode: true,
           registration_enabled: false,
-          version: "0.2.0",
+          version: "0.2.1",
         }}
       />,
       { "/api/automations": [{ ...rule, status: "ACTIVE", enabled: true }] },

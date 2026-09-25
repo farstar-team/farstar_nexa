@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import {
   Badge,
+  Confirm,
   Empty,
   ErrorNotice,
   Field,
@@ -83,6 +84,25 @@ export function productPayload(data: FormData) {
       discount_end: timestamp("discount_end"),
       fallback: value("fallback"),
     },
+  };
+}
+
+function productUpdatePayload(product: Product, status = product.status) {
+  return {
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    sku: product.sku,
+    status,
+    availability: product.availability,
+    base_price: product.base_price,
+    base_currency: product.base_currency,
+    output_currency: product.output_currency,
+    pricing_mode: product.pricing_mode,
+    manual_rate: product.manual_rate,
+    pricing: product.pricing,
+    url: product.url,
+    custom_fields: product.custom_fields,
   };
 }
 
@@ -333,6 +353,10 @@ export default function Products() {
   const [edit, setEdit] = useState<Product | null | undefined>();
   const [offset, setOffset] = useState(0);
   const [ratesOpen, setRatesOpen] = useState(false);
+  const [confirm, setConfirm] = useState<{
+    product: Product;
+    action: "toggle" | "delete";
+  }>();
   const query = useQuery({
     queryKey: ["products", offset],
     queryFn: () => api<Product[]>("/products?offset=" + offset),
@@ -371,10 +395,28 @@ export default function Products() {
               <p>
                 {t(p.pricing_mode)} · {t(p.availability)}
               </p>
-              <small>{p.sku || p.slug}</small>
-              <button className="secondary" onClick={() => setEdit(p)}>
-                ویرایش محصول
-              </button>
+              <small>
+                {p.sku || p.slug} · {p.media_count} محتوای متصل · {p.automation_count}{" "}
+                اتوماسیون
+              </small>
+              <small>آخرین تغییر: {date(p.updated_at)}</small>
+              <div className="form-actions">
+                <button className="secondary" onClick={() => setEdit(p)}>
+                  مشاهده و ویرایش محصول
+                </button>
+                <button
+                  className="secondary"
+                  onClick={() => setConfirm({ product: p, action: "toggle" })}
+                >
+                  {p.status === "ACTIVE" ? "غیرفعال کردن" : "فعال کردن"}
+                </button>
+                <button
+                  className="danger"
+                  onClick={() => setConfirm({ product: p, action: "delete" })}
+                >
+                  حذف امن
+                </button>
+              </div>
             </article>
           ))}
         </div>
@@ -411,6 +453,22 @@ export default function Products() {
         <Modal title="نرخ‌های Workspace" close={() => setRatesOpen(false)}>
           <RateSettings />
         </Modal>
+      )}
+      {confirm && (
+        <Confirm
+          close={() => setConfirm(undefined)}
+          action={async () => {
+            if (confirm.action === "delete") {
+              await api("/products/" + confirm.product.id, "DELETE");
+            } else {
+              await api("/products/" + confirm.product.id, "PUT", {
+                ...productUpdatePayload(confirm.product),
+                status: confirm.product.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+              });
+            }
+            await cache.invalidateQueries({ queryKey: ["products"] });
+          }}
+        />
       )}
     </>
   );

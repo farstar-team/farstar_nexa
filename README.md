@@ -8,7 +8,7 @@ Nexa gives each user a personal workspace for connected accounts, products, Inst
 
 ## V2 status
 
-Version **0.2.0** adds the Core Automation Engine V2 to the production-tested 0.1.x foundation. Product pricing, comment triggers and dry runs are locally and container tested; a real Meta account still needs App Review and a controlled acceptance test before live customer traffic. See [validation](docs/validation.md).
+Version **0.2.1** adds the Core Automation Engine V2 to the production-tested 0.1.x foundation. Product pricing, comment triggers and dry runs are locally and container tested; a real Meta account still needs App Review and a controlled acceptance test before live customer traffic. See [validation](docs/validation.md).
 
 | Status | Features |
 | --- | --- |
@@ -90,7 +90,7 @@ Caddy obtains and renews certificates automatically. Domain changes update `BASE
 sudo farstarnexa backup
 sudo farstarnexa restore nexa-YYYYMMDDTHHMMSS-xxxxxxxx.tar.gz
 sudo farstarnexa check-update
-sudo farstarnexa update v0.2.0
+sudo farstarnexa update v0.2.1
 ```
 
 The example release must actually exist before it can be installed. Backups contain a PostgreSQL custom-format dump, application/environment secrets, domain configuration and a checked manifest. Writers pause during backup. Restore validates archive entries, checksums, version and schema, makes a safety backup, and uses a single database transaction. It requires explicit confirmation. Backups contain sensitive material and are **not encrypted archives**; protect downloaded copies and use encrypted off-server storage.

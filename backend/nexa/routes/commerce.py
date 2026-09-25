@@ -43,16 +43,33 @@ def product_values(data):
 
 @router.get("/products")
 def products(user: User = Depends(current_user), db: Session = Depends(get_db), offset: int = Query(0, ge=0)):
-    return [
-        serialize(row, PRODUCT_FIELDS)
-        for row in db.scalars(
-            select(Product)
-            .where(Product.workspace_id == workspace(db, user).id)
-            .order_by(Product.created_at.desc())
-            .offset(offset)
-            .limit(100)
-        )
-    ]
+    media_count = (
+        select(func.count())
+        .select_from(InstagramMedia)
+        .where(InstagramMedia.product_id == Product.id)
+        .correlate(Product)
+        .scalar_subquery()
+    )
+    automation_count = (
+        select(func.count())
+        .select_from(Automation)
+        .where(Automation.product_id == Product.id)
+        .correlate(Product)
+        .scalar_subquery()
+    )
+    rows = db.execute(
+        select(Product, media_count, automation_count)
+        .where(Product.workspace_id == workspace(db, user).id)
+        .order_by(Product.created_at.desc())
+        .offset(offset)
+        .limit(100)
+    )
+    result = []
+    for row, linked_media, linked_automations in rows:
+        item = serialize(row, PRODUCT_FIELDS)
+        item.update(media_count=linked_media, automation_count=linked_automations)
+        result.append(item)
+    return result
 
 
 @router.post("/products/preview")

@@ -88,4 +88,4 @@ def settings() -> Settings:
 
 def version() -> str:
     path = Path(os.environ.get("NEXA_VERSION_FILE", str(Path(__file__).resolve().parents[2] / "VERSION")))
-    return path.read_text().strip() if path.exists() else "0.2.0"
+    return path.read_text().strip() if path.exists() else "0.2.1"

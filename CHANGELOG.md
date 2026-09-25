@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.1] - 2026-09-25
+
+- Completed the product catalogue list with linked-media and automation counts, last-update timestamps, explicit activation controls and referentially safe deletion.
+
 ## [0.2.0] - 2026-09-25
 
 - Added workspace-scoped products with Decimal pricing, explicit IRR/TOMAN conversion, manual and cached live exchange rates, adjustments, rounding, bounds and scheduled discounts.

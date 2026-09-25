@@ -262,6 +262,14 @@ def test_crud_and_reference_guard(signed, product, media):
     assert signed.delete("/api/products/" + product["id"]).status_code == 200
 
 
+def test_product_list_includes_usage_counts(signed, product, media, flow):
+    row = signed.get("/api/products").json()[0]
+    assert row["id"] == product["id"]
+    assert row["media_count"] == 1
+    assert row["automation_count"] == 1
+    assert row["updated_at"]
+
+
 def test_workspace_isolation(signed, product, account, media, flow):
     _, execution = dry(signed, account, media, flow)
     sign_in(signed, "bob")

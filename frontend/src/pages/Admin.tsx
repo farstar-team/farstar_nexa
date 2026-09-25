@@ -421,7 +421,7 @@ export default function Admin({ user }: { user: User }) {
                 name="tag"
                 dir="ltr"
                 pattern="v[0-9]+\.[0-9]+\.[0-9]+"
-                placeholder="v0.2.0"
+                placeholder="v0.2.1"
                 required
               />
             </Field>

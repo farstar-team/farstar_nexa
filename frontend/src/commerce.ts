@@ -26,6 +26,10 @@ export type Product = {
   pricing: PricingRule;
   url: string;
   custom_fields: Record<string, string>;
+  media_count: number;
+  automation_count: number;
+  created_at: string;
+  updated_at: string;
 };
 export type Media = {
   id: string;
