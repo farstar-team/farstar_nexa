@@ -11,6 +11,7 @@ OPERATIONS = {"backup", "restore", "delete-backup", "domain", "ssl", "update", "
 BACKUP_NAME = re.compile(r"^nexa-[0-9]{8}T[0-9]{6}-[a-f0-9]{8}\.tar\.gz$")
 RELEASE = re.compile(r"^v\d+\.\d+\.\d+$")
 DOMAIN = re.compile(r"^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
+CURRENT_SCHEMA = "0002"
 
 
 def canonical(value: dict) -> bytes:
@@ -41,8 +42,8 @@ def validate_metadata(data: dict, installed_version: str):
         raise ValueError("unsupported_backup_format")
     if not re.fullmatch(r"\d+\.\d+\.\d+", data.get("version", "")):
         raise ValueError("invalid_backup_version")
-    # V1 restores only the identical application schema; recovery across versions is an explicit operator task.
-    if data["version"] != installed_version or data.get("schema") != "0001":
+    # Restore only this release's exact application schema. Cross-version recovery is explicit operator work.
+    if data["version"] != installed_version or data.get("schema") != CURRENT_SCHEMA:
         raise ValueError("incompatible_backup")
     datetime.fromisoformat(data["created_at"])
     if not data.get("hostname") or set(data.get("sha256", {})) != {"database.dump", "nexa.env", "Caddyfile"}:

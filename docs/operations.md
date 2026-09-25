@@ -48,7 +48,7 @@ Update failure retains the old `current` symlink and pre-update backup but may l
 4. If migration changed the schema, use a compatible release and an explicitly confirmed backup restore. V1's normal restore command refuses version/schema mismatches. Cross-version disaster recovery needs an operator to restore the old dump into a separate PostgreSQL database, verify it with the old code, and switch only after validation. Do not bypass that guard on a live database.
 5. Restart the agent and verify integrations after recovery.
 
-Automated cross-version database rollback is intentionally not offered. Release signing, cross-version recovery tooling, real update fault-injection drills and scheduled off-server backups are next hardening work. No release update has been exercised against a published Nexa release yet.
+Automated cross-version database rollback is intentionally not offered. Release signing, cross-version recovery tooling, real update fault-injection drills and scheduled off-server backups remain hardening work. Every published release must exercise the documented backup, migration, update and health checks against a disposable stack before production rollout.
 
 ## Repair and removal
 

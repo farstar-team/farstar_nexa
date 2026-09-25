@@ -11,7 +11,7 @@ from nexa.config import Settings
 from nexa.db import engine
 from sqlalchemy import inspect, text
 
-from nexa_ops.protocol import canonical, sign, validate_metadata, validate_operation
+from nexa_ops.protocol import CURRENT_SCHEMA, canonical, sign, validate_metadata, validate_operation
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "cli"))
 from backups import validate_archive  # noqa: E402
@@ -21,8 +21,8 @@ def metadata():
     return {
         "format": 1,
         "product": "farstar-nexa",
-        "version": "0.1.0",
-        "schema": "0001",
+        "version": "0.2.0",
+        "schema": CURRENT_SCHEMA,
         "created_at": "2026-09-23T00:00:00+00:00",
         "hostname": "test",
         "sha256": {name: "a" * 64 for name in ["database.dump", "nexa.env", "Caddyfile"]},
@@ -31,17 +31,17 @@ def metadata():
 
 def test_metadata_rejects_incompatible_backups():
     valid = metadata()
-    validate_metadata(valid, "0.1.0")
+    validate_metadata(valid, "0.2.0")
     for field, value in [
         ("format", 2),
         ("product", "other"),
-        ("version", "0.2.0"),
-        ("schema", "0002"),
+        ("version", "0.1.1"),
+        ("schema", "0001"),
         ("sha256", {}),
     ]:
         data = {**valid, field: value}
         with pytest.raises(ValueError):
-            validate_metadata(data, "0.1.0")
+            validate_metadata(data, "0.2.0")
 
 
 @pytest.mark.parametrize(
@@ -87,13 +87,13 @@ def make_archive(path, malicious=False, corrupt=False):
 def test_archive_validation(tmp_path):
     archive = tmp_path / "valid.tar.gz"
     make_archive(archive)
-    assert validate_archive(archive, "0.1.0")["format"] == 1
+    assert validate_archive(archive, "0.2.0")["format"] == 1
     make_archive(archive, malicious=True)
     with pytest.raises(ValueError):
-        validate_archive(archive, "0.1.0")
+        validate_archive(archive, "0.2.0")
     make_archive(archive, corrupt=True)
     with pytest.raises(ValueError):
-        validate_archive(archive, "0.1.0")
+        validate_archive(archive, "0.2.0")
 
 
 def test_migration_has_constraints_and_history():
