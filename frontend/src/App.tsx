@@ -34,11 +34,18 @@ import Telegram from "./pages/Telegram";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
+import Products from "./pages/Products";
+import Media from "./pages/Media";
+import Leads from "./pages/Leads";
+import { Package, Images, Users } from "lucide-react";
 
 const navigation = [
   { key: "dashboard", icon: House },
   { key: "inbox", icon: InboxIcon },
   { key: "automations", icon: Zap },
+  { key: "products", icon: Package },
+  { key: "media", icon: Images },
+  { key: "leads", icon: Users },
   { key: "integrations", icon: Plug },
   { key: "telegram", icon: Send },
   { key: "executions", icon: Workflow },
@@ -97,6 +104,15 @@ export default function App() {
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user.role);
   let content;
   switch (page) {
+    case "products":
+      content = <Products />;
+      break;
+    case "media":
+      content = <Media />;
+      break;
+    case "leads":
+      content = <Leads />;
+      break;
     case "integrations":
       content = <Integrations config={config.data} />;
       break;

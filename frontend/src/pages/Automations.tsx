@@ -15,6 +15,7 @@ import {
   PageTitle,
 } from "../components";
 import { number, t } from "../i18n";
+import FlowEditor, { DryRun } from "./FlowEditor";
 
 export default function Automations({ config }: { config: Config }) {
   const cache = useQueryClient();
@@ -29,10 +30,15 @@ export default function Automations({ config }: { config: Config }) {
   const [edit, setEdit] = useState<Rule | null | undefined>();
   const [test, setTest] = useState(false);
   const [toggle, setToggle] = useState<Rule>();
+  const [flowEdit, setFlowEdit] = useState<Rule | null | undefined>();
+  const [dryRun, setDryRun] = useState<Rule>();
   const active = accounts.data?.filter((a) => a.active) ?? [];
   return (
     <>
       <PageTitle title="automations" subtitle="automationsSub">
+        <button disabled={!active.length} onClick={() => setFlowEdit(null)}>
+          ساخت Flow فروش
+        </button>
         <button
           className="secondary"
           disabled={!active.some((a) => a.provider === "instagram_mock")}
@@ -68,7 +74,11 @@ export default function Automations({ config }: { config: Config }) {
               <div className="rule-body">
                 <div className="rule-title">
                   <h3>{rule.name}</h3>
-                  <Badge value={rule.enabled ? "active" : "inactive"} />
+                  <Badge
+                    value={
+                      rule.status ?? (rule.enabled ? "active" : "inactive")
+                    }
+                  />
                 </div>
                 <p>
                   {accounts.data?.find((a) => a.id === rule.account_id)?.name}{" "}
@@ -83,10 +93,17 @@ export default function Automations({ config }: { config: Config }) {
                 <blockquote>{rule.response}</blockquote>
               </div>
               <div className="rule-actions">
+                {rule.flow?.version === 2 && (
+                  <button className="secondary" onClick={() => setDryRun(rule)}>
+                    Dry Run
+                  </button>
+                )}
                 <button
                   className="icon-button"
                   aria-label={t("edit")}
-                  onClick={() => setEdit(rule)}
+                  onClick={() =>
+                    rule.flow?.version === 2 ? setFlowEdit(rule) : setEdit(rule)
+                  }
                 >
                   <Pencil size={17} />
                 </button>
@@ -97,6 +114,23 @@ export default function Automations({ config }: { config: Config }) {
             </article>
           ))}
         </div>
+      )}
+      {flowEdit !== undefined && (
+        <Modal title="ساخت Flow فروش" close={() => setFlowEdit(undefined)}>
+          <FlowEditor
+            rule={flowEdit}
+            accounts={active}
+            done={() => {
+              void cache.invalidateQueries({ queryKey: ["automations"] });
+              setFlowEdit(undefined);
+            }}
+          />
+        </Modal>
+      )}
+      {dryRun && (
+        <Modal title="تست بدون ارسال واقعی" close={() => setDryRun(undefined)}>
+          <DryRun rule={dryRun} />
+        </Modal>
       )}
       {edit !== undefined && (
         <Modal

@@ -10,13 +10,20 @@ from sqlalchemy import text
 
 from nexa.config import settings, version
 from nexa.db import SessionLocal
-from nexa.routes import admin, auth, instagram, webhooks, workspace
+from nexa.routes import admin, auth, commerce, instagram, webhooks, workspace
 
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
 logging.getLogger("httpcore").setLevel(logging.CRITICAL)
 log = logging.getLogger("nexa.api")
 app = FastAPI(title="Farstar Nexa", version=version(), docs_url=None, redoc_url=None, openapi_url=None)
-for router in (auth.router, workspace.router, admin.router, instagram.router, webhooks.router):
+for router in (
+    auth.router,
+    workspace.router,
+    commerce.router,
+    admin.router,
+    instagram.router,
+    webhooks.router,
+):
     app.include_router(router)
 
 

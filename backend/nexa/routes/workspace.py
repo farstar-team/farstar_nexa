@@ -1,17 +1,32 @@
 import uuid
 from datetime import timedelta
+from decimal import Decimal
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from nexa.commerce_schema import CommentInput, FlowInput, aware
 from nexa.config import settings
 from nexa.db import get_db, utcnow
 from nexa.integration_config import integration_settings
-from nexa.models import Account, Audit, Automation, Conversation, Execution, Job, Message, TelegramLink, User
+from nexa.models import (
+    Account,
+    ActionExecution,
+    Audit,
+    Automation,
+    Conversation,
+    Execution,
+    InstagramMedia,
+    Job,
+    Message,
+    Product,
+    TelegramLink,
+    User,
+)
 from nexa.security import audit, current_user, issue_token, owned, rate_limit, workspace
 
 router = APIRouter(prefix="/api", tags=["workspace"])
@@ -21,12 +36,14 @@ def serialize(row, fields):
     result = {key: getattr(row, key) for key in fields.split()}
     for key, value in result.items():
         if hasattr(value, "isoformat"):
-            result[key] = value.isoformat() + "Z"
+            result[key] = aware(value).isoformat()
+        elif isinstance(value, Decimal):
+            result[key] = str(value)
     return result
 
 
 ACCOUNT_FIELDS = "id provider external_id name active created_at"
-RULE_FIELDS = "id account_id name enabled keywords match_mode response priority cooldown_seconds created_at"
+RULE_FIELDS = "id account_id name enabled status trigger_type keywords match_mode response priority cooldown_seconds product_id scope media_ids flow created_at"
 
 
 @router.get("/dashboard")
@@ -72,11 +89,12 @@ def accounts(user: User = Depends(current_user), db: Session = Depends(get_db)):
 
 class NewAccount(BaseModel):
     name: str = Field(min_length=1, max_length=120)
+    dry_run_only: bool = False
 
 
 @router.post("/accounts/mock", status_code=201)
 def mock_account(data: NewAccount, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    if not settings().mock_mode:
+    if not settings().mock_mode and not data.dry_run_only:
         raise HTTPException(403, "mock_disabled")
     row = Account(
         workspace_id=workspace(db, user).id,
@@ -103,12 +121,32 @@ def disconnect(identity: str, user: User = Depends(current_user), db: Session = 
 class RuleInput(BaseModel):
     account_id: str
     name: str = Field(min_length=1, max_length=120)
-    keywords: list[str] = Field(min_length=1, max_length=30)
-    match_mode: Literal["exact", "contains", "starts_with"] = "contains"
-    response: str = Field(min_length=1, max_length=1000)
+    keywords: list[str] = Field(default_factory=list, max_length=30)
+    match_mode: Literal["exact", "contains", "starts_with", "keyword_set", "any"] = "contains"
+    response: str = Field(default="", max_length=1000)
     priority: int = Field(default=0, ge=0, le=1000)
-    cooldown_seconds: int = Field(default=60, ge=2, le=86400)
+    cooldown_seconds: int = Field(default=60, ge=0, le=86400)
     enabled: bool = True
+    trigger_type: Literal["message.keyword", "instagram.comment"] = "message.keyword"
+    status: Literal["DRAFT", "ACTIVE", "PAUSED", "ERROR"] | None = None
+    product_id: str | None = None
+    scope: Literal["ANY_CONNECTED_MEDIA", "SPECIFIC_MEDIA", "PRODUCT_MEDIA"] = "ANY_CONNECTED_MEDIA"
+    media_ids: list[str] = Field(default_factory=list, max_length=100)
+    flow: FlowInput | None = None
+
+    @model_validator(mode="after")
+    def valid_flow(self):
+        if not self.flow and self.cooldown_seconds < 2:
+            raise ValueError("legacy_cooldown_minimum")
+        if self.match_mode != "any" and not self.keywords:
+            raise ValueError("keywords_required")
+        if not self.flow and (not self.response or self.trigger_type != "message.keyword"):
+            raise ValueError("flow_required")
+        if self.scope == "SPECIFIC_MEDIA" and not self.media_ids:
+            raise ValueError("media_required")
+        if self.scope == "PRODUCT_MEDIA" and not self.product_id:
+            raise ValueError("product_required")
+        return self
 
     @field_validator("keywords")
     @classmethod
@@ -116,6 +154,24 @@ class RuleInput(BaseModel):
         if any(not k.strip() or len(k) > 120 for k in value):
             raise ValueError("invalid_keywords")
         return [k.strip() for k in value]
+
+
+def rule_values(data, db, ws):
+    account = owned(db, Account, data.account_id, ws.id)
+    if not account.active:
+        raise HTTPException(400, "account_inactive")
+    if data.product_id:
+        owned(db, Product, data.product_id, ws.id)
+    for identity in data.media_ids:
+        media = owned(db, InstagramMedia, identity, ws.id)
+        if media.account_id != account.id:
+            raise HTTPException(422, "media_account_mismatch")
+    status = data.status or ("ACTIVE" if data.enabled else "PAUSED")
+    if status == "ACTIVE" and account.provider == "instagram_mock" and not settings().mock_mode:
+        raise HTTPException(422, "sample_account_dry_run_only")
+    values = data.model_dump(mode="json")
+    values.update(status=status, enabled=status == "ACTIVE", flow=values["flow"] or {})
+    return values
 
 
 @router.get("/automations")
@@ -136,7 +192,7 @@ def create_rule(data: RuleInput, user: User = Depends(current_user), db: Session
     account = owned(db, Account, data.account_id, ws.id)
     if not account.active:
         raise HTTPException(400, "account_inactive")
-    row = Automation(workspace_id=ws.id, **data.model_dump())
+    row = Automation(workspace_id=ws.id, **rule_values(data, db, ws))
     db.add(row)
     db.flush()
     audit(db, user.id, "automation.created", row.id)
@@ -153,7 +209,13 @@ def toggle_rule(
     identity: str, data: Toggle, user: User = Depends(current_user), db: Session = Depends(get_db)
 ):
     row = owned(db, Automation, identity, workspace(db, user).id)
+    account = db.get(Account, row.account_id)
+    if data.enabled and (
+        not account.active or (account.provider == "instagram_mock" and not settings().mock_mode)
+    ):
+        raise HTTPException(422, "account_cannot_activate")
     row.enabled = data.enabled
+    row.status = "ACTIVE" if data.enabled else "PAUSED"
     audit(db, user.id, "automation.toggle", row.id, enabled=data.enabled)
     db.commit()
     return serialize(row, RULE_FIELDS)
@@ -166,11 +228,42 @@ def edit_rule(
     ws = workspace(db, user)
     row = owned(db, Automation, identity, ws.id)
     owned(db, Account, data.account_id, ws.id)
-    for key, value in data.model_dump().items():
+    for key, value in rule_values(data, db, ws).items():
         setattr(row, key, value)
     audit(db, user.id, "automation.edited", row.id)
     db.commit()
     return serialize(row, RULE_FIELDS)
+
+
+@router.post("/automations/{identity}/dry-run")
+def dry_run(
+    identity: str, data: CommentInput, user: User = Depends(current_user), db: Session = Depends(get_db)
+):
+    from nexa.flows import event_message, queue_flow
+
+    ws = workspace(db, user)
+    row = owned(db, Automation, identity, ws.id)
+    account = owned(db, Account, data.account_id, ws.id)
+    db.refresh(account, with_for_update=True)
+    if row.account_id != account.id or not row.flow:
+        raise HTTPException(422, "invalid_flow_account")
+    media = owned(db, InstagramMedia, data.media_id, ws.id)
+    if media.account_id != account.id:
+        raise HTTPException(422, "media_account_mismatch")
+    rate_limit("dryrun:" + user.id, 30, 60)
+    key = f"dry:{row.id}:{data.event_id}"
+    existing = db.scalar(select(Message).where(Message.event_key == key))
+    if existing:
+        execution = db.scalar(
+            select(Execution).where(Execution.message_id == existing.id, Execution.automation_id == row.id)
+        )
+        return {"execution_id": execution.id, "duplicate": True, "dry_run": True}
+    payload = data.model_dump(mode="json")
+    payload["media_external_id"] = media.external_id
+    incoming, conversation = event_message(db, account, key, payload, True)
+    execution = queue_flow(db, row, incoming, conversation, account, payload, dry_run=True, force_report=True)
+    db.commit()
+    return {"execution_id": execution.id, "duplicate": False, "dry_run": True}
 
 
 class TestMessage(BaseModel):
@@ -237,16 +330,39 @@ def messages(identity: str, user: User = Depends(current_user), db: Session = De
 def executions(
     user: User = Depends(current_user), db: Session = Depends(get_db), offset: int = Query(0, ge=0)
 ):
-    return [
-        serialize(row, "id automation_id status detail created_at")
-        for row in db.scalars(
-            select(Execution)
-            .where(Execution.workspace_id == workspace(db, user).id)
-            .order_by(Execution.created_at.desc())
-            .offset(offset)
-            .limit(100)
+    rows = db.execute(
+        select(Execution, Automation.name, Product.name, InstagramMedia.caption)
+        .join(Automation, Automation.id == Execution.automation_id)
+        .outerjoin(Product, Product.id == Execution.product_id)
+        .outerjoin(InstagramMedia, InstagramMedia.id == Execution.media_id)
+        .where(Execution.workspace_id == workspace(db, user).id)
+        .order_by(Execution.created_at.desc())
+        .offset(offset)
+        .limit(100)
+    ).all()
+    identities = [item[0].id for item in rows]
+    actions = {identity: [] for identity in identities}
+    if identities:
+        for action in db.scalars(
+            select(ActionExecution)
+            .where(ActionExecution.execution_id.in_(identities))
+            .order_by(ActionExecution.execution_id, ActionExecution.position)
+        ):
+            actions[action.execution_id].append(action.kind)
+    result = []
+    for execution, automation_name, product_name, media_caption in rows:
+        item = serialize(
+            execution,
+            "id automation_id product_id media_id trigger event_id dry_run status detail created_at",
         )
-    ]
+        item.update(
+            automation_name=automation_name,
+            product_name=product_name,
+            media_caption=media_caption,
+            actions=actions[execution.id],
+        )
+        result.append(item)
+    return result
 
 
 @router.get("/activity")

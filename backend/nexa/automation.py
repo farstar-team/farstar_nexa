@@ -1,16 +1,20 @@
+import re
 import unicodedata
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from nexa.db import utcnow
+from nexa.commerce_schema import aware
+from nexa.db import now_utc, utcnow
 from nexa.models import Account, Automation, Conversation, Execution, Job, Message, User, Workspace
 from nexa.providers import DeliveryRejected, DeliveryUnknown, provider
 
 
 def normalize(text: str) -> str:
-    return unicodedata.normalize("NFKC", text).translate(str.maketrans("يك", "یک")).casefold().strip()
+    text = unicodedata.normalize("NFKC", text).translate(str.maketrans("يك", "یک")).casefold()
+    text = re.sub(r"[\u064b-\u065f\u0670\u0640]", "", text).replace("\u200c", " ")
+    return " ".join(text.split())
 
 
 def matches(text: str, keywords: list[str], mode: str) -> bool:
@@ -25,11 +29,17 @@ def matches(text: str, keywords: list[str], mode: str) -> bool:
             return True
         if mode == "starts_with" and text.startswith(keyword):
             return True
+        if mode == "keyword_set" and re.search(r"(?<!\w)" + re.escape(keyword) + r"(?!\w)", text):
+            return True
     return False
 
 
 def ingest(db: Session, job: Job):
     data = job.payload
+    if data.get("event_type") == "comment":
+        from nexa.flows import ingest_comment
+
+        return ingest_comment(db, job)
     account = db.scalar(select(Account).where(Account.id == data["account_id"]).with_for_update())
     if not account or not account.active or data.get("echo"):
         return
@@ -58,12 +68,23 @@ def ingest(db: Session, job: Job):
     )
     db.add(incoming)
     db.flush()
+    occurred = datetime.fromisoformat(data["occurred_at"]) if data.get("occurred_at") else now_utc()
+    if not conversation.last_inbound_at or aware(conversation.last_inbound_at) < aware(occurred):
+        conversation.last_inbound_at = occurred
     rules = db.scalars(
         select(Automation)
-        .where(Automation.account_id == account.id, Automation.enabled.is_(True))
+        .where(
+            Automation.account_id == account.id, Automation.enabled.is_(True), Automation.status == "ACTIVE"
+        )
         .order_by(Automation.priority.desc(), Automation.created_at, Automation.id)
     )
     for rule in rules:
+        if rule.flow and rule.trigger_type == "message.keyword":
+            from nexa.flows import queue_flow
+
+            if queue_flow(db, rule, incoming, conversation, account, data):
+                break
+            continue
         if rule.trigger_type != "message.keyword" or rule.action_type != "message.reply":
             continue
         if not matches(incoming.text, rule.keywords, rule.match_mode):
@@ -119,6 +140,15 @@ def deliver(db: Session, job: Job):
     if outgoing.status != "queued":
         return
     owner = db.get(User, db.get(Workspace, account.workspace_id).owner_id)
+    conversation = db.get(Conversation, outgoing.conversation_id)
+    if account.provider == "instagram" and (
+        not conversation.last_inbound_at
+        or now_utc() - aware(conversation.last_inbound_at) >= timedelta(hours=24)
+    ):
+        outgoing.status = execution.status = "cancelled"
+        execution.detail = "messaging_window_expired"
+        db.commit()
+        return
     if not account.active or not owner.active:
         outgoing.status = execution.status = "cancelled"
         db.commit()

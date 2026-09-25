@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0] - 2026-09-25
+
+- Added workspace-scoped products with Decimal pricing, explicit IRR/TOMAN conversion, manual and cached live exchange rates, adjustments, rounding, bounds and scheduled discounts.
+- Added Instagram post/reel synchronization, pagination cursors and multi-select product links using the official Meta API boundary.
+- Added versioned comment and message flows with safe templates, product/price sends, tags, leads, internal notes and durable delays.
+- Added event deduplication, customer/product cooldowns, delivery-window checks, bounded rate-limit retries and action-level execution records.
+- Added Persian RTL product, media, lead, flow-builder, dry-run, price-preview and execution-detail interfaces.
+- Added an additive Alembic migration that preserves legacy users, sessions, accounts, messages and automations; disabled legacy rules migrate to `PAUSED`.
+- Added backend and frontend coverage for tenant isolation, Decimal pricing, Persian matching, webhook formats, dry-run safety, retry/timeout behavior and core user workflows.
+
 ## [0.1.1] - 2026-09-24
 
 - Centralized public integration URLs under the existing `BASE_URL` configuration and validated its origin format.

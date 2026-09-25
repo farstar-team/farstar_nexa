@@ -32,6 +32,15 @@ export default function Dashboard({
     { key: "automations", icon: Zap, label: "automations" },
     { key: "executions", icon: Workflow, label: "executions" },
   ];
+  const commerce = useQuery({
+    queryKey: ["commerce-metrics"],
+    queryFn: () =>
+      api<{
+        counts: Record<string, number>;
+        executions: Record<string, number>;
+      }>("/commerce/metrics"),
+    refetchInterval: 10000,
+  });
   return (
     <>
       <PageTitle title="dashboard" subtitle="dashboardSub">
@@ -41,6 +50,27 @@ export default function Dashboard({
         </button>
       </PageTitle>
       <ErrorNotice error={query.error} />
+      <ErrorNotice error={commerce.error} />
+      {commerce.data && (
+        <div className="card commerce-card">
+          <h2>فروش و اتوماسیون</h2>
+          <div className="heading-actions">
+            <button className="secondary" onClick={() => navigate("products")}>
+              {number(commerce.data.counts.products)} محصول
+            </button>
+            <button className="secondary" onClick={() => navigate("leads")}>
+              {number(commerce.data.counts.leads)} مخاطب فروش
+            </button>
+          </div>
+          <p>
+            اجراهای واقعی:{" "}
+            {Object.entries(commerce.data.executions)
+              .map(([key, value]) => `${t(key)}: ${number(value)}`)
+              .join(" · ") || "هنوز اجرایی ثبت نشده"}
+          </p>
+          <small>Dry Run در آمار اجرای واقعی محاسبه نمی‌شود.</small>
+        </div>
+      )}
       {query.isPending ? (
         <Loading />
       ) : (

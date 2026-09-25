@@ -1,7 +1,9 @@
 import hashlib
 import hmac
 import json
+import re
 import time
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import PlainTextResponse
@@ -51,6 +53,40 @@ async def meta(request: Request, db: Session = Depends(get_db)):
             )
             if not account:
                 continue
+            changes = entry.get("changes", [])
+            if entry.get("field") == "comments":
+                changes = [*changes, entry]
+            for change in changes:
+                if change.get("field") != "comments":
+                    continue
+                value = change.get("value", {})
+                comment_id = str(value.get("id") or value.get("comment_id", ""))
+                sender = str(value.get("from", {}).get("id", ""))
+                media_id = str(value.get("media", {}).get("id", ""))
+                if (
+                    not all(re.fullmatch(r"[0-9]{1,128}", v) for v in (comment_id, sender, media_id))
+                    or sender == account.external_id
+                ):
+                    continue
+                if not value.get("text") or value.get("media", {}).get("media_product_type") not in {
+                    "FEED",
+                    "REELS",
+                }:
+                    continue
+                enqueue(
+                    db,
+                    f"meta-comment:{account.id}:{comment_id}",
+                    "incoming",
+                    {
+                        "account_id": account.id,
+                        "event_type": "comment",
+                        "event_id": comment_id,
+                        "sender": sender,
+                        "display_name": str(value.get("from", {}).get("username", ""))[:120],
+                        "text": str(value["text"])[:2000],
+                        "media_external_id": media_id,
+                    },
+                )
             for event in entry.get("messaging", []):
                 message = event.get("message", {})
                 sender = str(event.get("sender", {}).get("id", ""))
@@ -70,6 +106,10 @@ async def meta(request: Request, db: Session = Depends(get_db)):
                         "account_id": account.id,
                         "sender": sender,
                         "text": str(message["text"])[:2000],
+                        "event_id": str(message["mid"])[:128],
+                        "occurred_at": datetime.fromtimestamp(
+                            float(event["timestamp"]) / 1000, UTC
+                        ).isoformat(),
                     },
                 )
         db.commit()

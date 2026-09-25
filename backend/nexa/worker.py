@@ -9,7 +9,8 @@ from sqlalchemy import select, update
 from nexa.automation import deliver, ingest
 from nexa.config import settings
 from nexa.db import SessionLocal, utcnow
-from nexa.models import Execution, Job, Message
+from nexa.flows import run_flow
+from nexa.models import ActionExecution, Execution, Job, Message
 from nexa.security import decrypt
 from nexa.telegram import handle_update
 
@@ -20,7 +21,22 @@ def recover_stale(db):
     cutoff = utcnow() - timedelta(minutes=5)
     jobs = db.scalars(select(Job).where(Job.status == "running", Job.locked_at < cutoff).with_for_update())
     for job in jobs:
-        if job.kind in {"send", "telegram"}:
+        if job.kind == "flow":
+            execution = db.get(Execution, job.payload["execution_id"])
+            sending = db.scalar(
+                select(ActionExecution).where(
+                    ActionExecution.execution_id == execution.id, ActionExecution.status == "sending"
+                )
+            )
+            if sending:
+                sending.status = execution.status = job.status = "unknown"
+                execution.detail = "delivery_unknown_manual_review"
+                db.execute(
+                    update(Message).where(Message.event_key == "flow:" + sending.id).values(status="unknown")
+                )
+            else:
+                job.status = "pending"
+        elif job.kind in {"send", "telegram"}:
             job.status = "unknown"
             if job.kind == "send":
                 db.execute(
@@ -61,9 +77,12 @@ def run_one() -> bool:
                 deliver(db, job)
             elif job.kind == "telegram":
                 handle_update(db, json.loads(decrypt(job.payload["encrypted"])))
+            elif job.kind == "flow":
+                run_flow(db, job)
             else:
                 raise ValueError("unsupported_job")
-            job.status = "complete"
+            if job.status == "running":
+                job.status = "complete"
             # Linking tokens and raw webhook bodies need not survive successful processing.
             if job.kind == "telegram":
                 job.payload = {}
@@ -74,7 +93,7 @@ def run_one() -> bool:
             job.error = type(exc).__name__
             job.status = (
                 "unknown"
-                if job.kind in {"send", "telegram"}
+                if job.kind in {"send", "telegram", "flow"}
                 else ("failed" if job.attempts >= 5 else "pending")
             )
             job.available_at = utcnow() + timedelta(seconds=2**job.attempts)
@@ -84,6 +103,21 @@ def run_one() -> bool:
                     .where(Message.id == job.payload["message_id"], Message.status.in_(["queued", "sending"]))
                     .values(status="unknown")
                 )
+            if job.kind == "flow":
+                execution = db.get(Execution, job.payload["execution_id"])
+                execution.status, execution.detail = "unknown", "execution_interrupted_manual_review"
+                for action in db.scalars(
+                    select(ActionExecution).where(
+                        ActionExecution.execution_id == execution.id, ActionExecution.status == "sending"
+                    )
+                ):
+                    action.status = "unknown"
+                    db.execute(
+                        update(Message)
+                        .where(Message.event_key == "flow:" + action.id)
+                        .values(status="unknown")
+                    )
+            if job.kind == "send":
                 db.execute(
                     update(Execution)
                     .where(

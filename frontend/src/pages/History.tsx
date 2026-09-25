@@ -3,6 +3,9 @@ import { api } from "../api";
 import type { Activity, Execution, User } from "../api";
 import { Badge, Empty, ErrorNotice, Loading, PageTitle } from "../components";
 import { date, t } from "../i18n";
+import { useState } from "react";
+import { Modal } from "../components";
+import ExecutionDetail from "./ExecutionDetail";
 
 export default function History({
   page,
@@ -11,9 +14,12 @@ export default function History({
   page: "activity" | "executions";
   user: User;
 }) {
+  const [detail, setDetail] = useState<string>();
+  const [offset, setOffset] = useState(0);
   const query = useQuery({
-    queryKey: [page],
-    queryFn: () => api<(Activity & Execution)[]>("/" + page),
+    queryKey: [page, offset],
+    queryFn: () =>
+      api<(Activity & Execution)[]>("/" + page + "?offset=" + offset),
     refetchInterval: 5000,
   });
   return (
@@ -31,6 +37,12 @@ export default function History({
               <thead>
                 <tr>
                   <th>{t("action")}</th>
+                  {page === "executions" && (
+                    <>
+                      <th>محصول / مدیا</th>
+                      <th>محرک و اقدامات</th>
+                    </>
+                  )}
                   <th>{t("status")}</th>
                   <th>{t("date")}</th>
                 </tr>
@@ -39,8 +51,37 @@ export default function History({
                 {query.data.map((row) => (
                   <tr key={row.id}>
                     <td>
-                      <code>{row.action ?? row.automation_id}</code>
+                      <code>
+                        {row.action ?? row.automation_name ?? row.automation_id}
+                      </code>
+                      {page === "executions" && (
+                        <>
+                          <small>
+                            {t(row.trigger)} {row.dry_run ? "· Dry Run" : ""}
+                          </small>
+                          <button
+                            className="secondary"
+                            onClick={() => setDetail(row.id)}
+                          >
+                            جزئیات اجرا
+                          </button>
+                        </>
+                      )}
                     </td>
+                    {page === "executions" && (
+                      <>
+                        <td>
+                          {row.product_name ?? "—"}
+                          <small>{row.media_caption ?? ""}</small>
+                        </td>
+                        <td>
+                          {t(row.trigger)}
+                          <small>
+                            {row.actions?.map((action) => t(action)).join("، ")}
+                          </small>
+                        </td>
+                      </>
+                    )}
                     <td>
                       {row.status ? (
                         <Badge value={row.status} />
@@ -56,6 +97,27 @@ export default function History({
           </div>
         )}
       </div>
+      {page === "executions" && (
+        <div className="pagination">
+          <button
+            disabled={!offset}
+            onClick={() => setOffset(Math.max(0, offset - 100))}
+          >
+            قبلی
+          </button>
+          <button
+            disabled={(query.data?.length ?? 0) < 100}
+            onClick={() => setOffset(offset + 100)}
+          >
+            بعدی
+          </button>
+        </div>
+      )}
+      {detail && (
+        <Modal title="جزئیات اجرا" close={() => setDetail(undefined)}>
+          <ExecutionDetail id={detail} />
+        </Modal>
+      )}
     </>
   );
 }

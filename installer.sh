@@ -44,7 +44,7 @@ values = {
     'REDIS_URL': 'redis://redis:6379/0', 'DATA_DIR': '/var/lib/farstarnexa', 'CADDY_SITE': ':80',
     'HTTP_BIND': '127.0.0.1:8080', 'HTTPS_BIND': '127.0.0.1:8443',
     'META_APP_ID': '', 'META_APP_SECRET': '', 'META_VERIFY_TOKEN': secrets.token_urlsafe(32),
-    'META_API_VERSION': 'v23.0', 'TELEGRAM_BOT_TOKEN': '', 'TELEGRAM_BOT_USERNAME': '',
+    'META_API_VERSION': 'v26.0', 'TELEGRAM_BOT_TOKEN': '', 'TELEGRAM_BOT_USERNAME': '',
     'TELEGRAM_WEBHOOK_SECRET': secrets.token_urlsafe(32),
 }
 path = Path('/etc/farstarnexa/nexa.env')

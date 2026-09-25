@@ -142,6 +142,7 @@ def handle_update(db: Session, data: dict):
                     keyboard = [[{"text": TEXT["yes"], "callback_data": f"confirm:{rule.id}:{parts[2]}"}]]
                 elif len(parts) == 3 and parts[2] in {"0", "1"}:
                     rule.enabled = parts[2] == "1"
+                    rule.status = "ACTIVE" if rule.enabled else "PAUSED"
                     audit(db, user.id, "automation.toggle.telegram", rule.id, enabled=rule.enabled)
                     db.commit()
                     reply = TEXT["updated"]

@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from nexa.config import settings, version
 from nexa.db import get_db
 from nexa.integration_config import FIELDS, integration_settings
-from nexa.models import Account, Audit, Execution, Job, Message, User
+from nexa.models import Account, Audit, Automation, Execution, Job, Lead, Message, Product, User
 from nexa.models import Session as LoginSession
 from nexa.routes.auth import user_dict
 from nexa.routes.workspace import serialize
@@ -151,6 +151,9 @@ def status(user: User = Depends(require("system.manage")), db: Session = Depends
             "accounts": Account,
             "messages": Message,
             "executions": Execution,
+            "products": Product,
+            "leads": Lead,
+            "automations": Automation,
         }.items()
     }
     counts["active_users"] = db.scalar(select(func.count()).select_from(User).where(User.active.is_(True)))

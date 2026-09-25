@@ -7,6 +7,7 @@ import "@fontsource/vazirmatn/600.css";
 import "@fontsource/vazirmatn/700.css";
 import App from "./App";
 import "./styles.css";
+import "./commerce.css";
 const client = new QueryClient({
   defaultOptions: {
     queries: { retry: false, refetchOnWindowFocus: true, staleTime: 10000 },

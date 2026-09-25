@@ -1,10 +1,11 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from nexa.db import Base, utcnow
+from nexa.db import Base, now_utc, utcnow
 
 
 class Identity:
@@ -62,6 +63,7 @@ class Conversation(Identity, Base):
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
     account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id"), index=True)
     sender_id: Mapped[str] = mapped_column(String(128))
+    last_inbound_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Message(Identity, Base):
@@ -89,6 +91,13 @@ class Automation(Identity, Base):
     priority: Mapped[int] = mapped_column(Integer, default=0)
     cooldown_seconds: Mapped[int] = mapped_column(Integer, default=60)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    status: Mapped[str] = mapped_column(String(16), default="ACTIVE", server_default="ACTIVE")
+    product_id: Mapped[str | None] = mapped_column(ForeignKey("products.id"), index=True)
+    scope: Mapped[str] = mapped_column(
+        String(32), default="ANY_CONNECTED_MEDIA", server_default="ANY_CONNECTED_MEDIA"
+    )
+    media_ids: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
+    flow: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
 
 
 class Execution(Identity, Base):
@@ -100,6 +109,95 @@ class Execution(Identity, Base):
     conversation_id: Mapped[str] = mapped_column(ForeignKey("conversations.id"), index=True)
     status: Mapped[str] = mapped_column(String(24))
     detail: Mapped[str] = mapped_column(String(256), default="")
+    product_id: Mapped[str | None] = mapped_column(ForeignKey("products.id"), index=True)
+    media_id: Mapped[str | None] = mapped_column(ForeignKey("instagram_media.id"))
+    trigger: Mapped[str] = mapped_column(
+        String(32), default="message.keyword", server_default="message.keyword"
+    )
+    event_id: Mapped[str | None] = mapped_column(String(128))
+    dry_run: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    context: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class TimedIdentity(Identity):
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+
+class Product(TimedIdentity, Base):
+    __tablename__ = "products"
+    __table_args__ = (UniqueConstraint("workspace_id", "slug"),)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    slug: Mapped[str] = mapped_column(String(80))
+    description: Mapped[str] = mapped_column(Text, default="")
+    sku: Mapped[str] = mapped_column(String(80), default="")
+    status: Mapped[str] = mapped_column(String(16), default="ACTIVE")
+    availability: Mapped[str] = mapped_column(String(24), default="IN_STOCK")
+    base_price: Mapped[Decimal] = mapped_column(Numeric(24, 6))
+    base_currency: Mapped[str] = mapped_column(String(8))
+    output_currency: Mapped[str] = mapped_column(String(8))
+    pricing_mode: Mapped[str] = mapped_column(String(24), default="MANUAL")
+    manual_rate: Mapped[Decimal | None] = mapped_column(Numeric(24, 10))
+    pricing: Mapped[dict] = mapped_column(JSON, default=dict)
+    url: Mapped[str] = mapped_column(String(2048), default="")
+    custom_fields: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
+
+
+class WorkspaceRate(TimedIdentity, Base):
+    __tablename__ = "workspace_rates"
+    __table_args__ = (UniqueConstraint("workspace_id", "base_currency", "quote_currency"),)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    base_currency: Mapped[str] = mapped_column(String(8))
+    quote_currency: Mapped[str] = mapped_column(String(8))
+    rate: Mapped[Decimal] = mapped_column(Numeric(24, 10))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
+
+
+class InstagramMedia(TimedIdentity, Base):
+    __tablename__ = "instagram_media"
+    __table_args__ = (UniqueConstraint("account_id", "external_id"),)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id"), index=True)
+    external_id: Mapped[str] = mapped_column(String(128))
+    product_id: Mapped[str | None] = mapped_column(ForeignKey("products.id"), index=True)
+    caption: Mapped[str] = mapped_column(String(2200), default="")
+    media_type: Mapped[str] = mapped_column(String(32))
+    permalink: Mapped[str] = mapped_column(String(2048), default="")
+    thumbnail_url: Mapped[str] = mapped_column(String(2048), default="")
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+
+class Lead(TimedIdentity, Base):
+    __tablename__ = "leads"
+    __table_args__ = (UniqueConstraint("account_id", "external_id"),)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(32))
+    external_id: Mapped[str] = mapped_column(String(128))
+    display_name: Mapped[str] = mapped_column(String(120), default="")
+    source: Mapped[str] = mapped_column(String(32), default="instagram.comment")
+    tags: Mapped[list] = mapped_column(JSON, default=list)
+    notes: Mapped[list] = mapped_column(JSON, default=list)
+    first_interaction: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    last_interaction: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+
+class ActionExecution(TimedIdentity, Base):
+    __tablename__ = "action_executions"
+    __table_args__ = (UniqueConstraint("execution_id", "position"),)
+    execution_id: Mapped[str] = mapped_column(ForeignKey("executions.id"), index=True)
+    position: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(String(32))
+    config: Mapped[dict] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(24), default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    result: Mapped[dict] = mapped_column(JSON, default=dict)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Job(Identity, Base):

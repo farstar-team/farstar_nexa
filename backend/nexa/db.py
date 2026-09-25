@@ -10,6 +10,10 @@ def utcnow() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
+def now_utc() -> datetime:
+    return datetime.now(UTC)
+
+
 class Base(DeclarativeBase):
     pass
 

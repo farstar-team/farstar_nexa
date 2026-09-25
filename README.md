@@ -4,17 +4,17 @@
 
 [Official repository](https://github.com/farstar-team/farstar_nexa) · [Instagram @farstar_nexa](https://www.instagram.com/farstar_nexa/)
 
-Nexa gives each user a personal workspace for connected accounts, conversations and keyword replies. Instagram is the first messaging adapter; the automation engine is independent of any one provider.
+Nexa gives each user a personal workspace for connected accounts, products, Instagram media, leads and versioned automation flows. Instagram is the first messaging adapter; the automation engine is independent of any one provider.
 
-## V1 status
+## V2 status
 
-Version **0.1.0** is a working foundation, pending production acceptance on a fresh Ubuntu 24.04 server. Do not equate a green application test suite with a verified production installer or disaster recovery procedure. See [validation](docs/validation.md).
+Version **0.2.0** adds the Core Automation Engine V2 to the production-tested 0.1.x foundation. Product pricing, comment triggers and dry runs are locally and container tested; a real Meta account still needs App Review and a controlled acceptance test before live customer traffic. See [validation](docs/validation.md).
 
 | Status | Features |
 | --- | --- |
-| Implemented and locally verified | Registration/login/logout, Argon2id passwords, session revocation, RBAC, workspace isolation, Persian RTL interface, mobile layout, light/dark mode, mock Instagram accounts, keyword rules, asynchronous test messages, inbox, execution history, user controls, encrypted integration settings |
-| Implemented; external validation required | Official Instagram OAuth and webhook adapter, Telegram webhook/linking/inline controls, Docker deployment, Ubuntu installer, host CLI/agent, backup/restore, domain/automatic TLS, release updates |
-| Planned | Email delivery for password recovery, token refresh scheduling, outbound delivery reconciliation, retention policies, proactive Telegram notifications, full English translation, teams, quotas/billing, more messaging providers, visual flows |
+| Implemented and locally verified | Authentication/RBAC/workspace isolation, Persian RTL panel, products, Decimal pricing, manual/live exchange rates, discounts, Instagram media sync, product links, comment triggers, versioned actions, leads, dry run, execution details, idempotent queueing and bounded Meta backoff |
+| Implemented; external validation required | Official Instagram OAuth/comment webhook/private reply adapter, App Review permissions, Telegram, Docker/Ubuntu deployment, backup/restore, domain/TLS and release updates |
+| Planned | Email password recovery, token refresh scheduling, external delivery reconciliation, retention policies, full English translation, teams, quotas/billing, more providers and variable product variants/packages |
 
 The mock provider is explicitly labelled **حالت آزمایشی** and cannot start under `ENVIRONMENT=production`. A missing external credential never causes a fake connection or an automatic switch to mock mode.
 
@@ -90,7 +90,7 @@ Caddy obtains and renews certificates automatically. Domain changes update `BASE
 sudo farstarnexa backup
 sudo farstarnexa restore nexa-YYYYMMDDTHHMMSS-xxxxxxxx.tar.gz
 sudo farstarnexa check-update
-sudo farstarnexa update v0.1.1
+sudo farstarnexa update v0.2.0
 ```
 
 The example release must actually exist before it can be installed. Backups contain a PostgreSQL custom-format dump, application/environment secrets, domain configuration and a checked manifest. Writers pause during backup. Restore validates archive entries, checksums, version and schema, makes a safety backup, and uses a single database transaction. It requires explicit confirmation. Backups contain sensitive material and are **not encrypted archives**; protect downloaded copies and use encrypted off-server storage.
@@ -101,7 +101,7 @@ Updates stage an official version tag, build images before downtime, back up, mi
 
 The integration settings form in **مدیریت سیستم → وضعیت سیستم** stores Meta and Telegram credentials encrypted in PostgreSQL; saved values are never returned to the browser. Environment configuration remains supported, with saved panel values taking precedence.
 
-Instagram real mode requires an official Meta app, Instagram Login, a supported professional account, appropriate permissions and public HTTPS callbacks. OAuth, subscription and message sends must all succeed before Nexa records a live connection. The adapter needs a real credentialed acceptance test and scheduled token refresh before sustained production use.
+Instagram real mode requires an official Meta app, Instagram Login, a supported professional account, appropriate permissions and public HTTPS callbacks. OAuth, subscription and message sends must all succeed before Nexa records a live connection. The adapter uses the official comment webhook, media listing and private-reply contracts. A private reply is limited to one message within seven days of the original post/reel comment; later messages require a customer response and the 24-hour messaging window. The adapter needs Meta App Review, a real credentialed acceptance test and scheduled token refresh before sustained production use.
 
 Create a bot with Telegram's BotFather. Configure its token, username without `@`, and a random webhook secret of 32–256 URL-safe characters, then choose **ثبت وب‌هوک تلگرام** in the owner panel or run `sudo farstarnexa telegram-webhook`. A signed-in user generates a one-time ten-minute link in **تلگرام** and opens it in a private bot chat. The bot supports account lists, automation controls with confirmation, execution totals and a panel link. See [integrations](docs/integrations.md).
 
@@ -125,6 +125,7 @@ cd frontend
 npm ci
 npm run lint
 npm run typecheck
+npm test
 npm run build
 ```
 

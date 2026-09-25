@@ -26,7 +26,7 @@ def authorize(user: User = Depends(current_user), db: Session = Depends(get_db))
         "client_id": config.meta_app_id,
         "redirect_uri": config.public_urls["instagram_callback"],
         "response_type": "code",
-        "scope": "instagram_business_basic,instagram_business_manage_messages",
+        "scope": "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments",
         "state": state,
         "enable_fb_login": "0",
         "force_authentication": "1",
@@ -85,7 +85,7 @@ def callback(request: Request, user: User = Depends(current_user), db: Session =
             subscribed = client.post(
                 f"https://graph.instagram.com/{config.meta_api_version}/{identity}/subscribed_apps",
                 headers=headers,
-                data={"subscribed_fields": "messages"},
+                data={"subscribed_fields": "messages,comments"},
             )
             subscribed.raise_for_status()
             if subscribed.json().get("success") is not True:

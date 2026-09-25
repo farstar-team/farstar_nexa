@@ -50,6 +50,12 @@ export type Account = {
   active: boolean;
 };
 export type Rule = {
+  status: string;
+  trigger_type: string;
+  product_id: string | null;
+  scope: string;
+  media_ids: string[];
+  flow: { version?: number; actions?: import("./commerce").Action[] };
   id: string;
   account_id: string;
   name: string;
@@ -74,6 +80,12 @@ export type Message = {
   created_at: string;
 };
 export type Execution = {
+  dry_run: boolean;
+  trigger: string;
+  automation_name: string;
+  product_name: string | null;
+  media_caption: string | null;
+  actions: string[];
   id: string;
   automation_id: string;
   status: string;

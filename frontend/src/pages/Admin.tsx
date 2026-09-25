@@ -128,17 +128,15 @@ export default function Admin({ user }: { user: User }) {
           status.data && (
             <>
               <div className="stats-grid">
-                {Object.entries(status.data.counts)
-                  .slice(0, 4)
-                  .map(([key, value]) => (
-                    <div className="stat-card" key={key}>
-                      <div className="stat-top">
-                        {t(key)}
-                        <ActivityIcon size={18} />
-                      </div>
-                      <strong>{number(value)}</strong>
+                {Object.entries(status.data.counts).map(([key, value]) => (
+                  <div className="stat-card" key={key}>
+                    <div className="stat-top">
+                      {t(key)}
+                      <ActivityIcon size={18} />
                     </div>
-                  ))}
+                    <strong>{number(value)}</strong>
+                  </div>
+                ))}
               </div>
               <div className="settings-grid">
                 <section className="card">
@@ -423,7 +421,7 @@ export default function Admin({ user }: { user: User }) {
                 name="tag"
                 dir="ltr"
                 pattern="v[0-9]+\.[0-9]+\.[0-9]+"
-                placeholder="v0.1.1"
+                placeholder="v0.2.0"
                 required
               />
             </Field>

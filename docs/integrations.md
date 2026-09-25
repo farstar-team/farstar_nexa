@@ -8,6 +8,20 @@ Real mode requires a Meta app configured for Instagram Login, a supported profes
 
 Before production traffic, validate the complete OAuth callback, webhook verification/subscription, inbound event deduplication, keyword reply and provider send receipt with a dedicated test account. A missing credential must fail clearly; it must never silently enable the mock adapter.
 
+Nexa 0.2 uses only documented Instagram Login operations: `GET /<IG_USER_ID>/media` for owned professional media, comment webhook fields, `GET /<IG_COMMENT_ID>?fields=id,timestamp,media,from` to verify the original comment, and `POST /<IG_USER_ID>/messages` with `recipient.comment_id` for a private reply. It requests `instagram_business_basic`, `instagram_business_manage_comments` and `instagram_business_manage_messages`. The Meta app must subscribe the connected account to `comments,messages` and obtain the required access level through App Review for accounts outside app roles.
+
+Meta allows one private reply within seven days of a post/reel comment. The webhook notification time is not treated as comment creation time; Nexa reads the comment timestamp immediately before delivery. Follow-up messages are not sent until the recipient replies, and then only within the documented 24-hour window. Live-video comments and unsupported surfaces are rejected. Provider `unknown` results are quarantined for manual review rather than retried, avoiding duplicate customer messages.
+
+Official references used for this release:
+
+- [Private replies](https://developers.facebook.com/documentation/instagram-platform/private-replies)
+- [Comment moderation and webhook payloads](https://developers.facebook.com/documentation/instagram-platform/comment-moderation)
+- [IG Comment fields](https://developers.facebook.com/documentation/instagram-platform/instagram-graph-api/reference/ig-comment)
+- [IG User media](https://developers.facebook.com/documentation/instagram-platform/instagram-graph-api/reference/ig-user/media)
+- [App Review](https://developers.facebook.com/documentation/instagram-platform/app-review)
+
+Exchange-rate live mode uses the fixed-host, no-key ExchangeRate-API open endpoint through a provider interface. Redis stores provider timestamps and an expiry; stale rates fail closed unless the seller explicitly selected a manual fallback. The source is a daily indicative reference and is not presented as Iran's free-market rate. Product or workspace manual rates are recommended when the seller needs a commercial market rate. Attribution: [Rates By Exchange Rate API](https://www.exchangerate-api.com).
+
 ## Telegram
 
 Create a bot with BotFather. Set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME` without the `@` prefix and a random URL-safe `TELEGRAM_WEBHOOK_SECRET` containing 32–256 characters. Register the webhook with `sudo farstarnexa telegram-webhook` or the SUPER_ADMIN panel after HTTPS is available.

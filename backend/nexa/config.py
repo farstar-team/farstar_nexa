@@ -25,10 +25,19 @@ class Settings(BaseSettings):
     meta_app_id: str = ""
     meta_app_secret: str = ""
     meta_verify_token: str = ""
-    meta_api_version: str = "v23.0"
+    meta_api_version: str = "v26.0"
     telegram_bot_token: str = ""
     telegram_bot_username: str = ""
     telegram_webhook_secret: str = ""
+    exchange_provider: str = "open_er_api"
+    exchange_cache_ttl: int = 86400
+
+    @field_validator("exchange_cache_ttl")
+    @classmethod
+    def cache_ttl_range(cls, value):
+        if not 3600 <= value <= 86400:
+            raise ValueError("EXCHANGE_CACHE_TTL must be between 3600 and 86400 seconds")
+        return value
 
     @field_validator("base_url")
     @classmethod
@@ -79,4 +88,4 @@ def settings() -> Settings:
 
 def version() -> str:
     path = Path(os.environ.get("NEXA_VERSION_FILE", str(Path(__file__).resolve().parents[2] / "VERSION")))
-    return path.read_text().strip() if path.exists() else "0.1.0"
+    return path.read_text().strip() if path.exists() else "0.2.0"
