@@ -539,6 +539,7 @@ function RateSettings() {
           rate: string;
         }[];
         provider: { status: string };
+        active_provider?: string;
         attribution_url: string;
         attribution: string;
       }>("/exchange-rates"),
@@ -586,6 +587,9 @@ function RateSettings() {
           />
         </Field>
       </Form>
+      <p>
+        منبع فعال: {t(query.data?.active_provider ?? "tgju_sana")}
+      </p>
       <p>
         وضعیت منبع آنلاین: {t(query.data?.provider.status ?? "not_checked")}
       </p>

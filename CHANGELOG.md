@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.2] - 2026-09-26
+
+- Display the active exchange-rate provider clearly in Workspace rate settings.
+
 ## [0.3.1] - 2026-09-26
 
 - Show the configured Iranian rate-source attribution in the Workspace rate panel.
