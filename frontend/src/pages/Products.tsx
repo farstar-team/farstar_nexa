@@ -539,6 +539,8 @@ function RateSettings() {
           rate: string;
         }[];
         provider: { status: string };
+        attribution_url: string;
+        attribution: string;
       }>("/exchange-rates"),
   });
   return (
@@ -588,11 +590,11 @@ function RateSettings() {
         وضعیت منبع آنلاین: {t(query.data?.provider.status ?? "not_checked")}
       </p>
       <a
-        href="https://www.exchangerate-api.com"
+        href={query.data?.attribution_url}
         target="_blank"
         rel="noreferrer"
       >
-        Rates By Exchange Rate API
+        {query.data?.attribution ?? "منبع نرخ آنلاین"}
       </a>
     </>
   );

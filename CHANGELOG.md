@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.1] - 2026-09-26
+
+- Show the configured Iranian rate-source attribution in the Workspace rate panel.
+
 ## [0.3.0] - 2026-09-26
 
 - Added Iranian Sana exchange-rate support with cached, fail-closed provider handling and optional Bonbast configuration.
