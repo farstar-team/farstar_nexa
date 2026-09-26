@@ -11,7 +11,7 @@ OPERATIONS = {"backup", "restore", "delete-backup", "domain", "ssl", "update", "
 BACKUP_NAME = re.compile(r"^nexa-[0-9]{8}T[0-9]{6}-[a-f0-9]{8}\.tar\.gz$")
 RELEASE = re.compile(r"^v\d+\.\d+\.\d+$")
 DOMAIN = re.compile(r"^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
-CURRENT_SCHEMA = "0002"
+CURRENT_SCHEMA = "0003"
 
 
 def canonical(value: dict) -> bytes:

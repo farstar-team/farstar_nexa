@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.2] - 2026-09-26
+
+- Updated the release safety-backup schema guard for the support and notification migration.
+
 ## [0.4.1] - 2026-09-26
 
 - Enabled Telegram Mini App SDK loading under the production Content Security Policy.
