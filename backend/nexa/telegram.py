@@ -41,7 +41,8 @@ def bot_call(method: str, payload: dict) -> dict:
 
 def menu():
     return [[{"text": TEXT[key], "callback_data": key}] for key in ("accounts", "automations", "stats")] + [
-        [{"text": TEXT["panel"], "url": integration_settings().base_url}]
+        [{"text": "🚀 مینی‌اپ نکسا", "web_app": {"url": integration_settings().base_url + "/telegram-mini-app"}}],
+        [{"text": TEXT["panel"], "url": integration_settings().base_url}],
     ]
 
 
@@ -63,6 +64,10 @@ def configure_webhook():
             "secret_token": config.telegram_webhook_secret,
             "allowed_updates": ["message", "callback_query"],
         },
+    )
+    bot_call(
+        "setChatMenuButton",
+        {"menu_button": {"type": "web_app", "text": "Nexa Mini App", "web_app": {"url": config.base_url + "/telegram-mini-app"}}},
     )
 
 

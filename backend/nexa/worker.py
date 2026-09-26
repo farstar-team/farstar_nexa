@@ -10,11 +10,34 @@ from nexa.automation import deliver, ingest
 from nexa.config import settings
 from nexa.db import SessionLocal, utcnow
 from nexa.flows import run_flow
-from nexa.models import ActionExecution, Execution, Job, Message
+from nexa.models import ActionExecution, Execution, Job, Message, Notification, TelegramLink, User
 from nexa.security import decrypt
 from nexa.telegram import handle_update
 
 log = logging.getLogger("nexa.worker")
+
+
+def deliver_notification(db, job, channel: str):
+    notification = db.get(Notification, job.payload["notification_id"])
+    if not notification:
+        return
+    user = db.get(User, notification.user_id)
+    if not user or not user.active:
+        notification.status = "failed"
+        return
+    if channel == "email":
+        from nexa.email_service import send_email
+
+        send_email(user.email, notification.title, notification.body)
+    else:
+        link = db.scalar(select(TelegramLink).where(TelegramLink.user_id == user.id))
+        if not link:
+            notification.status = "failed"
+            return
+        from nexa.telegram import bot_call
+
+        bot_call("sendMessage", {"chat_id": link.telegram_id, "text": f"{notification.title}\n\n{notification.body}"})
+    notification.status = "sent"
 
 
 def recover_stale(db):
@@ -77,6 +100,10 @@ def run_one() -> bool:
                 deliver(db, job)
             elif job.kind == "telegram":
                 handle_update(db, json.loads(decrypt(job.payload["encrypted"])))
+            elif job.kind == "notification_email":
+                deliver_notification(db, job, "email")
+            elif job.kind == "notification_telegram":
+                deliver_notification(db, job, "telegram")
             elif job.kind == "flow":
                 run_flow(db, job)
             else:

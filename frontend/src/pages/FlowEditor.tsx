@@ -292,7 +292,7 @@ export default function FlowEditor({
                       }}
                     />
                   </Field>
-                  <details>
+                  <details className="pretty-details">
                     <summary>درج متغیر در پیام (کلیک یا بکش و رها کن)</summary>
                     <p className="field-help">متغیر در محل نشانگر متن درج می‌شود؛ می‌توانید آن را بکشید و داخل کادر متن رها کنید.</p>
                     <div className="variable-list">

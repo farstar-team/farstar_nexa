@@ -270,7 +270,7 @@ export function ProductEditor({
           <small>قیمت پایه همین قیمت نهایی است؛ تبدیل ارز و درصد سود/کارمزد اعمال نمی‌شود.</small>
         </span>
       </label>
-      <details open>
+      <details className="pretty-details" open>
         <summary>تعدیل، گردکردن و حدود قیمت</summary>
         <div className="form-grid">
           <label className="toggle-card">
@@ -317,7 +317,7 @@ export function ProductEditor({
           خاموش و روشن کنید.
         </small>
       </details>
-      <details>
+      <details className="pretty-details">
         <summary>تخفیف زمان‌دار</summary>
         <div className="form-grid">
           {choices(

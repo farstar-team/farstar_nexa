@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     bonbast_api_url: str = "https://www.bonbast.com/api"
     bonbast_username: str = ""
     bonbast_hash: str = ""
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_security: str = "starttls"
 
     @field_validator("exchange_cache_ttl")
     @classmethod

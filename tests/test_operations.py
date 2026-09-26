@@ -101,7 +101,7 @@ def test_migration_has_constraints_and_history():
     assert {"users", "workspaces", "accounts", "jobs", "executions"} <= set(inspector.get_table_names())
     assert any(item["column_names"] == ["key"] for item in inspector.get_unique_constraints("jobs"))
     with engine.connect() as connection:
-        assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0002"
+        assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0003"
     assert {"products", "instagram_media", "leads", "workspace_rates", "action_executions"} <= set(
         inspector.get_table_names()
     )

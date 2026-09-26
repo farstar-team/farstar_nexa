@@ -7,7 +7,7 @@ from typing import Literal
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field, TypeAdapter, ValidationError
 from redis import Redis
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.orm import Session
@@ -15,7 +15,19 @@ from sqlalchemy.orm import Session
 from nexa.config import settings, version
 from nexa.db import get_db
 from nexa.integration_config import FIELDS, integration_settings
-from nexa.models import Account, Audit, Automation, Execution, Job, Lead, Message, Product, User
+from nexa.models import (
+    Account,
+    Audit,
+    Automation,
+    Execution,
+    Job,
+    Lead,
+    Message,
+    Notification,
+    Product,
+    SystemSetting,
+    User,
+)
 from nexa.models import Session as LoginSession
 from nexa.routes.auth import user_dict
 from nexa.routes.workspace import serialize
@@ -60,6 +72,19 @@ def save_integrations(
             raise HTTPException(422, "validation_error")
         if key == "telegram_bot_username" and not re.fullmatch(r"[A-Za-z0-9_]{5,32}", value):
             raise HTTPException(422, "validation_error")
+        if key == "smtp_port":
+            try:
+                if not 1 <= int(value) <= 65535:
+                    raise ValueError
+            except ValueError:
+                raise HTTPException(422, "validation_error") from None
+        if key == "smtp_security" and value.lower() not in {"none", "starttls", "ssl"}:
+            raise HTTPException(422, "validation_error")
+        if key == "smtp_from":
+            try:
+                TypeAdapter(EmailStr).validate_python(value)
+            except ValidationError:
+                raise HTTPException(422, "validation_error") from None
         if "\n" in value or "\r" in value:
             raise HTTPException(422, "validation_error")
         row = db.get(SystemSetting, key)
@@ -70,6 +95,107 @@ def save_integrations(
     audit(db, user.id, "integrations.configured", fields=sorted(data.values))
     db.commit()
     return {"ok": True}
+
+
+@router.post("/email/test")
+def email_test(
+    data: dict,
+    user: User = Depends(require("system.manage")),
+    db: Session = Depends(get_db),
+):
+    password = str(data.get("password", ""))
+    if not verify_password(password, user.password_hash):
+        raise HTTPException(403, "invalid_credentials")
+    recipient = str(data.get("to", user.email))
+    try:
+        TypeAdapter(EmailStr).validate_python(recipient)
+    except ValidationError:
+        raise HTTPException(422, "validation_error") from None
+    from nexa.email_service import send_email
+
+    try:
+        send_email(recipient, "آزمایش ایمیل Farstar Nexa", "این پیام برای بررسی تنظیمات ایمیل پنل ارسال شده است.")
+    except RuntimeError as exc:
+        raise HTTPException(400, str(exc)) from None
+    except Exception:
+        raise HTTPException(502, "email_delivery_failed") from None
+    audit(db, user.id, "email.test_sent")
+    db.commit()
+    return {"ok": True}
+
+
+class ContentInput(BaseModel):
+    values: dict[str, str]
+
+
+@router.get("/content")
+def get_content(user: User = Depends(require("system.manage")), db: Session = Depends(get_db)):
+    from nexa.routes.content import CONTENT_DEFAULTS, values
+
+    return {"values": values(db), "defaults": CONTENT_DEFAULTS}
+
+
+@router.put("/content")
+def save_content(
+    data: ContentInput,
+    user: User = Depends(require("system.manage")),
+    db: Session = Depends(get_db),
+):
+    from nexa.routes.content import CONTENT_DEFAULTS
+
+    if not set(data.values) <= set(CONTENT_DEFAULTS) or any(len(value) > 2000 for value in data.values.values()):
+        raise HTTPException(422, "validation_error")
+    for key, value in data.values.items():
+        if not value.strip():
+            continue
+        row = db.get(SystemSetting, key)
+        if row:
+            row.value = value.strip()
+        else:
+            db.add(SystemSetting(key=key, value=value.strip()))
+    audit(db, user.id, "content.updated", fields=sorted(data.values))
+    db.commit()
+    return {"ok": True}
+
+
+class AdminMessage(BaseModel):
+    user_id: str
+    title: str = Field(min_length=1, max_length=160)
+    body: str = Field(min_length=1, max_length=5000)
+    channels: list[Literal["panel", "email", "telegram"]] = Field(min_length=1, max_length=3)
+
+
+@router.post("/messages", status_code=202)
+def send_admin_message(
+    data: AdminMessage,
+    user: User = Depends(require("system.manage")),
+    db: Session = Depends(get_db),
+):
+    target = db.get(User, data.user_id)
+    if not target or not target.active:
+        raise HTTPException(404, "not_found")
+    channels = list(dict.fromkeys(data.channels))
+    for channel in channels:
+        notification = Notification(
+            user_id=target.id,
+            title=data.title.strip(),
+            body=data.body.strip(),
+            channel=channel,
+            status="sent" if channel == "panel" else "queued",
+        )
+        db.add(notification)
+        db.flush()
+        if channel in {"email", "telegram"}:
+            db.add(
+                Job(
+                    key=f"notification:{notification.id}",
+                    kind="notification_" + channel,
+                    payload={"notification_id": notification.id},
+                )
+            )
+    audit(db, user.id, "notification.sent", target.id, channels=channels)
+    db.commit()
+    return {"ok": True, "channels": channels}
 
 
 @router.post("/telegram-webhook")

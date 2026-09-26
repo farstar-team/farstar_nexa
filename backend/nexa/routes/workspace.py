@@ -1,9 +1,14 @@
+import hashlib
+import hmac
+import json
+import time
 import uuid
 from datetime import timedelta
 from decimal import Decimal
 from typing import Literal
+from urllib.parse import parse_qsl
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -417,3 +422,53 @@ def telegram_unlink(user: User = Depends(current_user), db: Session = Depends(ge
     audit(db, user.id, "telegram.unlinked")
     db.commit()
     return {"ok": True}
+
+
+class TelegramWebAppInput(BaseModel):
+    init_data: str = Field(min_length=1, max_length=4096)
+
+
+@router.post("/telegram/webapp-auth")
+def telegram_webapp_auth(data: TelegramWebAppInput, response: Response, db: Session = Depends(get_db)):
+    config = integration_settings()
+    if not config.telegram_bot_token:
+        raise HTTPException(503, "telegram_not_configured")
+    pairs = dict(parse_qsl(data.init_data, keep_blank_values=True))
+    received = pairs.pop("hash", "")
+    try:
+        auth_age = time.time() - int(pairs.get("auth_date", "0"))
+    except ValueError:
+        raise HTTPException(401, "telegram_auth_invalid") from None
+    if not received or not pairs.get("auth_date") or auth_age > 86400 or auth_age < -300:
+        raise HTTPException(401, "telegram_auth_invalid")
+    check = "\n".join(f"{key}={pairs[key]}" for key in sorted(pairs))
+    secret = hmac.new(b"WebAppData", config.telegram_bot_token.encode(), hashlib.sha256).digest()
+    expected = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(received, expected):
+        raise HTTPException(401, "telegram_auth_invalid")
+    try:
+        telegram_id = str(json.loads(pairs.get("user", "{}"))["id"])
+    except (ValueError, KeyError, TypeError):
+        raise HTTPException(401, "telegram_auth_invalid") from None
+    link = db.scalar(select(TelegramLink).where(TelegramLink.telegram_id == telegram_id))
+    user = db.get(User, link.user_id) if link else None
+    if not user or not user.active:
+        raise HTTPException(403, "telegram_not_linked")
+    token, csrf = uuid.uuid4().hex + uuid.uuid4().hex, uuid.uuid4().hex
+    from nexa.models import Session as LoginSession
+    from nexa.security import digest
+
+    db.add(
+        LoginSession(
+            user_id=user.id,
+            token_hash=digest(token),
+            csrf_hash=digest(csrf),
+            expires_at=utcnow() + timedelta(hours=settings().session_hours),
+        )
+    )
+    audit(db, user.id, "telegram.mini_app_login")
+    db.commit()
+    opts = {"secure": settings().cookie_secure, "samesite": "lax", "path": "/", "max_age": settings().session_hours * 3600}
+    response.set_cookie("nexa_session", token, httponly=True, **opts)
+    response.set_cookie("nexa_csrf", csrf, httponly=False, **opts)
+    return {"user": {"username": user.username}, "ok": True}

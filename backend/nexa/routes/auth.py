@@ -17,6 +17,7 @@ from nexa.security import (
     current_user,
     digest,
     hasher,
+    issue_token,
     rate_limit,
     validate_password,
     verify_password,
@@ -186,6 +187,32 @@ class ResetPassword(BaseModel):
     @classmethod
     def strong_password(cls, value):
         return validate_password(value)
+
+
+class ResetRequest(BaseModel):
+    email: EmailStr
+
+
+@router.post("/request-reset")
+def request_reset(data: ResetRequest, request: Request, db: DBSession = Depends(get_db)):
+    rate_limit("reset-request:" + request.client.host, 10, 900)
+    user = db.scalar(select(User).where(User.email == str(data.email).lower(), User.active.is_(True)))
+    if user:
+        token = issue_token(db, user.id, "password_reset", minutes=30)
+        audit(db, user.id, "auth.password_reset_requested")
+        db.commit()
+        try:
+            from nexa.email_service import send_email
+
+            send_email(
+                user.email,
+                "بازیابی رمز عبور Farstar Nexa",
+                f"برای تعیین رمز عبور تازه، این پیوند را باز کنید:\n{settings().base_url}/?recovery={token}",
+            )
+        except Exception:
+            # Keep the response generic and never reveal account existence or SMTP details.
+            pass
+    return {"ok": True}
 
 
 @router.post("/reset-password")

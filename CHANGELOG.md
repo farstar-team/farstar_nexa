@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0] - 2026-09-26
+
+- Added support tickets and live-chat threads with admin replies and status management.
+- Added panel notifications with queued email and Telegram delivery channels.
+- Added encrypted SMTP settings, test-email delivery and password-reset email flow.
+- Added an admin content editor for public landing and support copy.
+- Added Telegram Mini App authentication and menu entry using the central public URL.
+- Simplified activity text for users and restored a compact mobile-visible logout icon.
+- Added polished collapsible sections and responsive support/notification layouts.
+
 ## [0.3.3] - 2026-09-26
 
 - Implemented the optional Bonbast POST API provider using its documented sell-price fields and Toman-to-Rial normalization.

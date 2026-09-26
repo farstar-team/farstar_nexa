@@ -7,6 +7,25 @@ import { useState } from "react";
 import { Modal } from "../components";
 import ExecutionDetail from "./ExecutionDetail";
 
+const activityText: Record<string, string> = {
+  "auth.login": "وارد حساب شدید",
+  "auth.logout": "از حساب خارج شدید",
+  "auth.register": "حساب کاربری ساخته شد",
+  "telegram.link": "تلگرام وصل شد",
+  "telegram.unlinked": "تلگرام قطع شد",
+  "telegram.link_requested": "درخواست اتصال تلگرام ساخته شد",
+  "automation.created": "اتوماسیون ساخته شد",
+  "automation.toggle": "وضعیت اتوماسیون تغییر کرد",
+  "automation.edited": "اتوماسیون ویرایش شد",
+  "integrations.configured": "تنظیمات اتصال‌ها به‌روزرسانی شد",
+  "support.ticket_created": "تیکت پشتیبانی ثبت شد",
+  "support.message_added": "پیام پشتیبانی ارسال شد",
+};
+
+function readableActivity(action?: string) {
+  return (action && activityText[action]) || "یک فعالیت در حساب ثبت شد";
+}
+
 export default function History({
   page,
   user,
@@ -51,9 +70,11 @@ export default function History({
                 {query.data.map((row) => (
                   <tr key={row.id}>
                     <td>
-                      <code>
-                        {row.action ?? row.automation_name ?? row.automation_id}
-                      </code>
+                      {page === "activity" ? (
+                        <span>{readableActivity(row.action)}</span>
+                      ) : (
+                        <code>{row.action ?? row.automation_name ?? row.automation_id}</code>
+                      )}
                       {page === "executions" && (
                         <>
                           <small>

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Download,
   Globe2,
+  MessageCircle,
   RefreshCw,
   Server,
   Shield,
@@ -26,6 +27,8 @@ import {
 } from "../components";
 import { date, number, t } from "../i18n";
 import IntegrationSettings from "./IntegrationSettings";
+import ContentEditor from "./ContentEditor";
+import MessageCenter from "./MessageCenter";
 
 type Status = {
   version: string;
@@ -56,6 +59,8 @@ const tabs = [
   { key: "domain", icon: Globe2 },
   { key: "updates", icon: Download },
   { key: "audit", icon: Shield },
+  { key: "content", icon: Globe2 },
+  { key: "messages", icon: MessageCircle },
 ];
 
 export default function Admin({ user }: { user: User }) {
@@ -463,6 +468,8 @@ export default function Admin({ user }: { user: User }) {
           )}
         </section>
       )}
+      {owner && tab === "content" && <ContentEditor />}
+      {owner && tab === "messages" && <MessageCenter currentUser={user} />}
       {owner && tab === "system" && <IntegrationSettings />}
       {owner && !!operations.data?.length && (
         <section className="card operation-history">

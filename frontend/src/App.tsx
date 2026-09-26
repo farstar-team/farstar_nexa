@@ -8,6 +8,7 @@ import {
   FlaskConical,
   House,
   Inbox as InboxIcon,
+  LifeBuoy,
   LogOut,
   Menu,
   Moon,
@@ -38,6 +39,9 @@ import Products from "./pages/Products";
 import Media from "./pages/Media";
 import Leads from "./pages/Leads";
 import Landing from "./pages/Landing";
+import Support from "./pages/Support";
+import Notifications from "./pages/Notifications";
+import TelegramMiniApp from "./pages/TelegramMiniApp";
 import { Package, Images, Users } from "lucide-react";
 
 const navigation = [
@@ -51,9 +55,15 @@ const navigation = [
   { key: "telegram", icon: Send },
   { key: "executions", icon: Workflow },
   { key: "activity", icon: Activity },
+  { key: "support", icon: LifeBuoy },
   { key: "settings", icon: SettingsIcon },
 ];
 export default function App() {
+  if (location.pathname === "/telegram-mini-app") return <TelegramMiniApp />;
+  return <PanelApp />;
+}
+
+function PanelApp() {
   const cache = useQueryClient();
   const [page, setPage] = useState(location.hash.slice(1) || "dashboard");
   const [mobile, setMobile] = useState(false);
@@ -130,6 +140,12 @@ export default function App() {
     case "activity":
     case "executions":
       content = <History key={page} page={page} user={user} />;
+      break;
+    case "support":
+      content = <Support user={user} />;
+      break;
+    case "notifications":
+      content = <Notifications user={user} />;
       break;
     case "settings":
       content = <Settings user={user} />;
@@ -246,7 +262,7 @@ export default function App() {
             <button
               className="icon-button"
               aria-label={t("activity")}
-              onClick={() => navigate("activity")}
+              onClick={() => navigate("notifications")}
             >
               <Bell size={19} />
             </button>
@@ -261,7 +277,7 @@ export default function App() {
               <b>{user.username}</b>
             </button>
             <button
-              className="logout-button profile-action"
+              className="icon-button logout-button"
               aria-label={t("logout")}
               onClick={async () => {
                 try {
@@ -274,7 +290,6 @@ export default function App() {
               }}
             >
               <LogOut size={18} />
-              <span>{t("logout")}</span>
             </button>
           </div>
         </header>

@@ -10,7 +10,7 @@ from sqlalchemy import text
 
 from nexa.config import settings, version
 from nexa.db import SessionLocal
-from nexa.routes import admin, auth, commerce, instagram, webhooks, workspace
+from nexa.routes import admin, auth, commerce, content, instagram, notifications, support, webhooks, workspace
 
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
 logging.getLogger("httpcore").setLevel(logging.CRITICAL)
@@ -23,6 +23,9 @@ for router in (
     admin.router,
     instagram.router,
     webhooks.router,
+    support.router,
+    notifications.router,
+    content.router,
 ):
     app.include_router(router)
 
@@ -32,7 +35,7 @@ async def security_headers(request: Request, call_next):
     request_id = str(uuid.uuid4())
     if request.method not in {"GET", "HEAD", "OPTIONS"} and not request.url.path.startswith("/webhooks/"):
         origin = request.headers.get("origin")
-        if origin and origin.rstrip("/") != settings().base_url.rstrip("/"):
+        if origin and origin.rstrip("/") != settings().base_url.rstrip("/") and request.url.path != "/api/telegram/webapp-auth":
             return JSONResponse({"detail": "origin_invalid"}, status_code=403)
     # Read with a hard cap, including chunked requests without Content-Length.
     total, chunks = 0, []

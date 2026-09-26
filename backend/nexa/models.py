@@ -226,6 +226,35 @@ class Audit(Identity, Base):
     detail: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
+class SupportTicket(Identity, Base):
+    __tablename__ = "support_tickets"
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    subject: Mapped[str] = mapped_column(String(160))
+    status: Mapped[str] = mapped_column(String(24), default="open", index=True)
+    priority: Mapped[str] = mapped_column(String(16), default="normal")
+    channel: Mapped[str] = mapped_column(String(16), default="ticket")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+class SupportMessage(Identity, Base):
+    __tablename__ = "support_messages"
+    ticket_id: Mapped[str] = mapped_column(ForeignKey("support_tickets.id"), index=True)
+    author_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), index=True)
+    author_role: Mapped[str] = mapped_column(String(16), default="user")
+    body: Mapped[str] = mapped_column(Text)
+
+
+class Notification(Identity, Base):
+    __tablename__ = "notifications"
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    title: Mapped[str] = mapped_column(String(160))
+    body: Mapped[str] = mapped_column(Text)
+    channel: Mapped[str] = mapped_column(String(16), default="panel", index=True)
+    status: Mapped[str] = mapped_column(String(16), default="queued", index=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
 class SystemSetting(Base):
     __tablename__ = "system_settings"
     key: Mapped[str] = mapped_column(String(64), primary_key=True)

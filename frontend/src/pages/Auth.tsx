@@ -8,7 +8,7 @@ import { Field, Form } from "../components";
 import { t } from "../i18n";
 
 export default function Auth({ config }: { config?: Config }) {
-  const [mode, setMode] = useState<"login" | "register" | "recovery">("login");
+  const [mode, setMode] = useState<"login" | "register" | "request" | "recovery">(() => new URLSearchParams(location.search).has("recovery") ? "recovery" : "login");
   const cache = useQueryClient();
   return (
     <div className="auth-layout">
@@ -23,11 +23,16 @@ export default function Auth({ config }: { config?: Config }) {
         <div className="auth-card">
           <p className="eyebrow">{brand.name}</p>
           <h1>{t(mode)}</h1>
-          <p>{t(mode === "recovery" ? "recoveryHint" : mode + "Sub")}</p>
+          <p>{t(mode === "recovery" ? "recoveryHint" : mode === "request" ? "recoveryRequestHint" : mode + "Sub")}</p>
           <Form
             key={mode}
             label={mode}
             submit={async (data) => {
+              if (mode === "request") {
+                await api("/auth/request-reset", "POST", { email: data.get("email") });
+                setMode("recovery");
+                return;
+              }
               if (mode === "recovery") {
                 await api("/auth/reset-password", "POST", {
                   token: data.get("token"),
@@ -49,9 +54,11 @@ export default function Auth({ config }: { config?: Config }) {
               cache.setQueryData(["me"], user);
             }}
           >
-            {mode === "recovery" ? (
+            {mode === "request" ? (
+              <Field label="email"><input name="email" type="email" required dir="ltr" autoComplete="email" /></Field>
+            ) : mode === "recovery" ? (
               <Field label="token">
-                <input name="token" required dir="ltr" autoComplete="off" />
+                <input name="token" required dir="ltr" autoComplete="off" defaultValue={new URLSearchParams(location.search).get("recovery") ?? ""} />
               </Field>
             ) : (
               <Field label="username">
@@ -75,22 +82,9 @@ export default function Auth({ config }: { config?: Config }) {
                 />
               </Field>
             )}
-            <Field
-              label="password"
-              hint={mode !== "login" ? "passwordHint" : undefined}
-            >
-              <input
-                name="password"
-                type="password"
-                required
-                dir="ltr"
-                minLength={mode === "login" ? 1 : 12}
-                maxLength={256}
-                autoComplete={
-                  mode === "login" ? "current-password" : "new-password"
-                }
-              />
-            </Field>
+            {mode !== "request" && <Field label="password" hint={mode !== "login" ? "passwordHint" : undefined}>
+              <input name="password" type="password" required dir="ltr" minLength={mode === "login" ? 1 : 12} maxLength={256} autoComplete={mode === "login" ? "current-password" : "new-password"} />
+            </Field>}
           </Form>
           <div className="auth-links">
             {config?.registration_enabled && (
@@ -105,11 +99,9 @@ export default function Auth({ config }: { config?: Config }) {
             )}
             <button
               className="text-button"
-              onClick={() =>
-                setMode(mode === "recovery" ? "login" : "recovery")
-              }
+              onClick={() => setMode(mode === "recovery" || mode === "request" ? "login" : "request")}
             >
-              {t(mode === "recovery" ? "returnLogin" : "recovery")}
+              {t(mode === "recovery" || mode === "request" ? "returnLogin" : "recovery")}
             </button>
           </div>
         </div>

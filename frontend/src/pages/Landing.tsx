@@ -1,7 +1,11 @@
 import { ArrowLeft, CircleDollarSign, MessageCircle, ShieldCheck, Sparkles, Workflow } from "lucide-react";
 import { brand } from "../brand";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../api";
 
 export default function Landing({ onStart }: { onStart: () => void }) {
+  const content = useQuery({ queryKey: ["public-content"], queryFn: () => api<Record<string, string>>("/content") });
+  const text = (key: string, fallback: string) => content.data?.[key] || fallback;
   return (
     <main className="landing-page" dir="rtl">
       <header className="landing-nav">
@@ -13,10 +17,10 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       </header>
       <section className="landing-hero">
         <div className="landing-copy">
-          <span className="landing-kicker"><Sparkles size={16} /> فروش اجتماعی هوشمند</span>
-          <h1>پاسخ سریع‌تر، فروش منظم‌تر، تجربه‌ای حرفه‌ای برای مشتری</h1>
-          <p>Farstar Nexa پیام‌ها و کامنت‌های شبکه‌های اجتماعی را به فرایند فروش قابل مدیریت تبدیل می‌کند؛ از نمایش قیمت تا ثبت سرنخ و پیگیری.</p>
-          <button className="landing-cta" onClick={onStart}>شروع کار با Nexa <ArrowLeft size={18} /></button>
+          <span className="landing-kicker"><Sparkles size={16} /> {text("landing.kicker", "فروش اجتماعی هوشمند")}</span>
+          <h1>{text("landing.title", "پاسخ سریع‌تر، فروش منظم‌تر، تجربه‌ای حرفه‌ای برای مشتری")}</h1>
+          <p>{text("landing.description", "Farstar Nexa پیام‌ها و کامنت‌های شبکه‌های اجتماعی را به فرایند فروش قابل مدیریت تبدیل می‌کند؛ از نمایش قیمت تا ثبت سرنخ و پیگیری.")}</p>
+          <button className="landing-cta" onClick={onStart}>{text("landing.cta", "شروع کار با Nexa")} <ArrowLeft size={18} /></button>
           <small className="landing-note">قیمت‌ها و اطلاعات شما در پنل اختصاصی‌تان مدیریت می‌شود.</small>
         </div>
         <div className="landing-orbit" aria-hidden="true">
@@ -27,7 +31,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
         </div>
       </section>
       <section className="landing-section">
-        <div className="section-heading"><div><span className="eyebrow">یک پنل، یک جریان روشن</span><h2>همه چیز برای فروش اجتماعی در یکجا</h2></div></div>
+        <div className="section-heading"><div><span className="eyebrow">یک پنل، یک جریان روشن</span><h2>{text("landing.features_title", "همه چیز برای فروش اجتماعی در یکجا")}</h2></div></div>
         <div className="landing-features">
           <article><span className="feature-icon"><MessageCircle /></span><h3>پاسخ خودکار و شخصی‌سازی‌شده</h3><p>برای هر پیام، قالب بسازید و نام مشتری، محصول، قیمت و اطلاعات پست را با یک کلیک وارد کنید.</p></article>
           <article><span className="feature-icon"><CircleDollarSign /></span><h3>قیمت‌گذاری قابل کنترل</h3><p>نرخ ایرانی، سود یا کارمزد و تخفیف را جداگانه روشن یا خاموش کنید؛ یا قیمت نهایی را مستقیم ثبت کنید.</p></article>
