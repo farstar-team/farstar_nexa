@@ -1,4 +1,7 @@
 export type PricingRule = {
+  direct_price?: boolean;
+  adjustment_enabled?: boolean | null;
+  rate_source?: string | null;
   percentage: string;
   fixed: string;
   rounding: string;
@@ -96,20 +99,53 @@ export type ExecutionDetail = {
 };
 export const currencies = ["USD", "EUR", "AED", "IRR", "TOMAN"];
 export const variables = [
+  "customer.id",
   "customer.name",
+  "comment.id",
   "comment.text",
   "product.name",
   "product.description",
+  "product.sku",
+  "product.availability",
   "product.base_price",
   "product.base_currency",
   "product.price",
   "product.currency",
   "product.converted_price",
+  "product.original_price",
+  "product.discount",
   "product.url",
   "exchange.rate",
+  "exchange.source",
   "exchange.updated_at",
   "instagram.username",
+  "media.caption",
+  "media.url",
 ];
+export const variableLabels: Record<string, string> = {
+  "customer.id": "شناسه مشتری",
+  "customer.name": "نام مشتری",
+  "comment.id": "شناسه رویداد",
+  "comment.text": "متن پیام",
+  "product.name": "نام محصول",
+  "product.description": "توضیحات محصول",
+  "product.sku": "کد کالا",
+  "product.availability": "وضعیت موجودی",
+  "product.base_price": "قیمت پایه",
+  "product.base_currency": "ارز پایه",
+  "product.price": "قیمت نهایی",
+  "product.currency": "ارز قیمت",
+  "product.converted_price": "قیمت تبدیل‌شده",
+  "product.original_price": "قیمت قبل از تخفیف",
+  "product.discount": "مقدار تخفیف",
+  "product.url": "لینک محصول",
+  "exchange.rate": "نرخ ارز",
+  "exchange.source": "منبع نرخ",
+  "exchange.updated_at": "زمان به‌روزرسانی نرخ",
+  "instagram.username": "نام کاربری اینستاگرام",
+  "media.caption": "عنوان پست",
+  "media.url": "لینک پست",
+};
 export const newAction = (type = "SEND_PRICE"): Action => ({
   type,
   template:

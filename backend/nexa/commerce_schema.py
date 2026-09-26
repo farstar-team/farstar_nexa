@@ -15,6 +15,11 @@ class StrictInput(BaseModel):
 
 
 class PricingRule(StrictInput):
+    # Explicit controls are optional so records created before v0.3 keep their
+    # historical pricing behaviour.
+    direct_price: bool = False
+    adjustment_enabled: bool | None = None
+    rate_source: Literal["tgju_sana", "bonbast", "open_er_api"] | None = None
     percentage: Decimal = Field(default=Decimal(0), ge=-100, le=10000, allow_inf_nan=False)
     fixed: Decimal = Field(default=Decimal(0), ge=-999999999999, le=999999999999, allow_inf_nan=False)
     rounding: Amount = Decimal(0)
@@ -52,6 +57,12 @@ class ProductInput(StrictInput):
     pricing: PricingRule = Field(default_factory=PricingRule)
     url: str = Field(default="", max_length=2048)
     custom_fields: dict[str, str] = Field(default_factory=dict, max_length=20)
+
+    @model_validator(mode="after")
+    def validate_direct_price(self):
+        if self.pricing.direct_price and self.base_currency != self.output_currency:
+            raise ValueError("direct_price_currency_mismatch")
+        return self
 
     @field_validator("url")
     @classmethod

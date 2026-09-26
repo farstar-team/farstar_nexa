@@ -113,7 +113,128 @@ class OpenExchangeProvider:
             raise PricingUnavailable("exchange_rate_unavailable") from None
 
 
-PROVIDERS: dict[str, ExchangeRateProvider] = {"open_er_api": OpenExchangeProvider()}
+def _number(value) -> Decimal | None:
+    """Parse the numeric formats used by Iranian rate feeds."""
+    if value is None:
+        return None
+    text = str(value).strip().replace(",", "").replace("٬", "").replace("٫", ".")
+    text = text.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
+    try:
+        result = Decimal(text)
+    except (ArithmeticError, ValueError):
+        return None
+    return result if result.is_finite() and result > 0 else None
+
+
+def _walk_sana(payload):
+    if isinstance(payload, dict):
+        if payload.get("id"):
+            yield str(payload["id"]), payload
+        for key, value in payload.items():
+            yield str(key), value
+            yield from _walk_sana(value)
+    elif isinstance(payload, list):
+        for item in payload:
+            yield from _walk_sana(item)
+
+
+class TgjuSanaProvider:
+    """Iranian Sana rates published by TGJU's official Sana service."""
+
+    name = "tgju_sana"
+    url = "https://api.tgju.org/v1/data/sana/json"
+    keys = {"USD": "sana_sell_usd", "EUR": "sana_sell_eur", "AED": "sana_sell_aed"}
+
+    def health(self):
+        try:
+            with Redis.from_url(settings().redis_url, socket_timeout=2, socket_connect_timeout=2) as client:
+                status = client.get("fx:tgju_sana:health") or b"not_checked"
+                return {
+                    "provider": self.name,
+                    "status": status.decode() if isinstance(status, bytes) else status,
+                }
+        except RedisError:
+            return {"provider": self.name, "status": "cache_unavailable"}
+
+    def _fetch(self, now):
+        response = httpx.get(self.url, timeout=8)
+        response.raise_for_status()
+        found = {}
+        for key, value in _walk_sana(response.json()):
+            normalized = key.lower().replace("-", "_")
+            for currency, expected in self.keys.items():
+                if normalized == expected:
+                    number = _number(value.get("p") if isinstance(value, dict) else value)
+                    if number:
+                        found[currency] = number
+        if set(found) != set(self.keys):
+            raise PricingUnavailable("exchange_rate_unavailable")
+        return {"rates": {key: str(value) for key, value in found.items()}, "fetched_at": now.timestamp()}
+
+    def get_rate(self, base: str, quote: str) -> ExchangeRate:
+        actual_base = "IRR" if base == "TOMAN" else base
+        actual_quote = "IRR" if quote == "TOMAN" else quote
+        now = datetime.now(UTC)
+        if actual_base == actual_quote:
+            rate = Decimal(10 if base == "TOMAN" else 1) / Decimal(10 if quote == "TOMAN" else 1)
+            return ExchangeRate(base, quote, rate, "fixed_conversion", now, now + timedelta(days=1))
+        try:
+            with Redis.from_url(settings().redis_url, socket_connect_timeout=2, socket_timeout=2) as client:
+                key = "fx:tgju_sana:rates"
+                raw = client.get(key)
+                data = json.loads(raw) if raw else None
+                if not data or float(data.get("expires_at", 0)) <= now.timestamp():
+                    if not client.set(key + ":fetch", "1", nx=True, ex=3600):
+                        raise PricingUnavailable("exchange_rate_unavailable")
+                    try:
+                        data = self._fetch(now)
+                        data["expires_at"] = now.timestamp() + settings().exchange_cache_ttl
+                        client.set(key, json.dumps(data), ex=172800)
+                        client.set("fx:tgju_sana:health", "healthy", ex=86400)
+                    except (httpx.HTTPError, ValueError, TypeError, PricingUnavailable):
+                        client.set("fx:tgju_sana:health", "unavailable", ex=3600)
+                        raise PricingUnavailable("exchange_rate_unavailable") from None
+                rates = {key: Decimal(str(value)) for key, value in data["rates"].items()}
+                irr_per_base = Decimal(1) if actual_base == "IRR" else rates[actual_base]
+                irr_per_quote = Decimal(1) if actual_quote == "IRR" else rates[actual_quote]
+                rate = irr_per_base / irr_per_quote
+                rate *= Decimal(10 if base == "TOMAN" else 1) / Decimal(10 if quote == "TOMAN" else 1)
+                if not rate.is_finite() or rate <= 0:
+                    raise ValueError()
+                return ExchangeRate(
+                    base,
+                    quote,
+                    rate,
+                    self.name,
+                    datetime.fromtimestamp(float(data["fetched_at"]), UTC),
+                    datetime.fromtimestamp(float(data["expires_at"]), UTC),
+                )
+        except (RedisError, KeyError, TypeError, ValueError):
+            raise PricingUnavailable("exchange_rate_unavailable") from None
+
+
+class BonbastProvider:
+    """Optional commercial Iranian free-market feed; disabled without credentials."""
+
+    name = "bonbast"
+
+    def health(self):
+        return {
+            "provider": self.name,
+            "status": "configured"
+            if settings().bonbast_username and settings().bonbast_hash
+            else "not_configured",
+        }
+
+    def get_rate(self, base: str, quote: str) -> ExchangeRate:
+        raise PricingUnavailable("exchange_rate_unavailable")
+
+
+PROVIDERS: dict[str, ExchangeRateProvider] = {
+    "open_er_api": OpenExchangeProvider(),
+    "tgju_sana": TgjuSanaProvider(),
+    "bonbast": BonbastProvider(),
+}
 
 
 def format_price(value: Decimal) -> str:
@@ -138,11 +259,15 @@ def calculate(db, product, *, sample_rate=None, now=None):
             rate_updated = row.updated_at
     source = "manual"
     rate = manual
+    direct_price = rule.direct_price
     fixed_conversion = product.base_currency == product.output_currency or {
         product.base_currency,
         product.output_currency,
     } <= {"IRR", "TOMAN"}
-    if fixed_conversion:
+    if direct_price:
+        rate = Decimal(1)
+        source = "direct_price"
+    elif fixed_conversion:
         rate = (
             Decimal(10 if product.base_currency == "TOMAN" else 1)
             / Decimal(10 if product.output_currency == "TOMAN" else 1)
@@ -153,11 +278,10 @@ def calculate(db, product, *, sample_rate=None, now=None):
     elif sample_rate is not None:
         rate, source = Decimal(str(sample_rate)), "sample"
     exchange = None
-    if product.pricing_mode != "MANUAL" and source not in {"sample", "fixed_conversion"}:
+    if not direct_price and product.pricing_mode != "MANUAL" and source not in {"sample", "fixed_conversion"}:
         try:
-            exchange = PROVIDERS[settings().exchange_provider].get_rate(
-                product.base_currency, product.output_currency
-            )
+            provider_name = rule.rate_source or settings().exchange_provider
+            exchange = PROVIDERS[provider_name].get_rate(product.base_currency, product.output_currency)
             if exchange.expires_at <= now:
                 raise PricingUnavailable("exchange_rate_stale")
             rate, source = exchange.rate, exchange.provider
@@ -171,7 +295,10 @@ def calculate(db, product, *, sample_rate=None, now=None):
         ctx.prec = 50
         converted = Decimal(product.base_price) * rate
         adjusted = converted
-        if product.pricing_mode != "LIVE":
+        adjustment_enabled = (
+            rule.adjustment_enabled if rule.adjustment_enabled is not None else product.pricing_mode != "LIVE"
+        )
+        if not direct_price and adjustment_enabled:
             adjusted = converted * (1 + rule.percentage / 100) + rule.fixed
         original = max(Decimal(0), adjusted)
         discount_active = (not rule.discount_start or now >= rule.discount_start) and (
@@ -208,6 +335,6 @@ def calculate(db, product, *, sample_rate=None, now=None):
         expires_at=exchange.expires_at.isoformat() if exchange else None,
         warning="manual_fallback"
         if source == "manual_fallback"
-        else ("indicative_daily_rate" if exchange else ""),
+        else ("indicative_daily_rate" if exchange and source in {"open_er_api", "tgju_sana"} else ""),
     )
     return result

@@ -24,7 +24,7 @@ from nexa.models import (
     Message,
     Product,
 )
-from nexa.pricing import ExchangeRate, PricingUnavailable, calculate
+from nexa.pricing import ExchangeRate, PricingUnavailable, TgjuSanaProvider, calculate
 from nexa.providers import DeliveryUnknown, InstagramProvider, RateLimited, Receipt
 from nexa.routes.commerce import product_values
 from nexa.security import encrypt
@@ -148,6 +148,63 @@ def test_pricing_modes(monkeypatch, mode, final):
         )
     )
     assert calculate(None, p)["final_price"] == final
+
+
+def test_direct_price_disables_conversion_and_adjustment():
+    p = Product(
+        **product_values(
+            ProductInput.model_validate(
+                {
+                    **PRODUCT,
+                    "base_currency": "TOMAN",
+                    "output_currency": "TOMAN",
+                    "base_price": "125000",
+                    "manual_rate": None,
+                    "pricing": {"direct_price": True, "percentage": "25", "fixed": "5000"},
+                }
+            )
+        )
+    )
+    result = calculate(None, p)
+    assert result["source"] == "direct_price"
+    assert result["final_price"] == "125000.00"
+    assert result["adjustment"] == "0"
+
+
+def test_explicit_adjustment_toggle_overrides_legacy_mode():
+    p = Product(
+        **product_values(
+            ProductInput.model_validate(
+                {
+                    **PRODUCT,
+                    "pricing_mode": "LIVE",
+                    "pricing": {"percentage": "10", "adjustment_enabled": True},
+                }
+            )
+        )
+    )
+    result = calculate(None, p, sample_rate=Decimal("60000"))
+    assert result["final_price"] == "825000.00"
+
+
+def test_tgju_sana_parser_accepts_p_fields(monkeypatch):
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "data": [
+                    {"id": "sana_sell_usd", "p": "600,000"},
+                    {"id": "sana_sell_eur", "p": "650000"},
+                    {"id": "sana_sell_aed", "p": "163500"},
+                ]
+            }
+
+    monkeypatch.setattr(pricing.httpx, "get", lambda *args, **kwargs: Response())
+    data = TgjuSanaProvider()._fetch(now_utc())
+    assert data["rates"]["USD"] == "600000"
+    assert data["rates"]["EUR"] == "650000"
 
 
 def test_discount_window_and_price_bounds():

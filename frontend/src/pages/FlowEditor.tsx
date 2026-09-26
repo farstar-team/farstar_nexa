@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
 import type { Account, Rule } from "../api";
 import type { Action, Media, Product } from "../commerce";
-import { newAction, variables } from "../commerce";
+import { newAction, variableLabels, variables } from "../commerce";
 import { ErrorNotice, Field, Form } from "../components";
 import { t } from "../i18n";
 import ExecutionDetail from "./ExecutionDetail";
@@ -40,6 +40,7 @@ export default function FlowEditor({
   const [priority, setPriority] = useState(rule?.priority ?? 0);
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
+  const templateRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
   const products = useQuery({
     queryKey: ["products"],
     queryFn: () => api<Product[]>("/products"),
@@ -52,6 +53,19 @@ export default function FlowEditor({
   });
   function update(i: number, value: Partial<Action>) {
     setActions(actions.map((a, n) => (n === i ? { ...a, ...value } : a)));
+  }
+  function insertVariable(index: number, variable: string) {
+    const textarea = templateRefs.current[index];
+    const token = `{{${variable}}}`;
+    const current = actions[index].template;
+    const start = textarea?.selectionStart ?? current.length;
+    const end = textarea?.selectionEnd ?? start;
+    update(index, { template: current.slice(0, start) + token + current.slice(end) });
+    requestAnimationFrame(() => {
+      textarea?.focus();
+      const caret = start + token.length;
+      textarea?.setSelectionRange(caret, caret);
+    });
   }
   async function save() {
     setBusy(true);
@@ -262,25 +276,37 @@ export default function FlowEditor({
                 <>
                   <Field label="قالب پیام">
                     <textarea
+                      ref={(element) => {
+                        templateRefs.current[i] = element;
+                      }}
                       rows={4}
                       maxLength={1000}
                       value={a.template}
                       onChange={(e) => update(i, { template: e.target.value })}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const token = e.dataTransfer.getData("text/plain");
+                        const variable = token.match(/^{{([a-z_]+\.[a-z_]+)}}$/)?.[1];
+                        if (variable && variables.includes(variable)) insertVariable(i, variable);
+                      }}
                     />
                   </Field>
                   <details>
-                    <summary>درج متغیر در پیام</summary>
+                    <summary>درج متغیر در پیام (کلیک یا بکش و رها کن)</summary>
+                    <p className="field-help">متغیر در محل نشانگر متن درج می‌شود؛ می‌توانید آن را بکشید و داخل کادر متن رها کنید.</p>
                     <div className="variable-list">
                       {variables.map((v) => (
                         <button
                           className="secondary"
                           type="button"
                           key={v}
-                          onClick={() =>
-                            update(i, { template: a.template + ` {{${v}}}` })
-                          }
+                          draggable
+                          title={`{{${v}}}`}
+                          onDragStart={(e) => e.dataTransfer.setData("text/plain", `{{${v}}}`)}
+                          onClick={() => insertVariable(i, v)}
                         >
-                          {v}
+                          {variableLabels[v] ?? v}
                         </button>
                       ))}
                     </div>

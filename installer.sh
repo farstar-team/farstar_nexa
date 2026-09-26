@@ -46,6 +46,7 @@ values = {
     'META_APP_ID': '', 'META_APP_SECRET': '', 'META_VERIFY_TOKEN': secrets.token_urlsafe(32),
     'META_API_VERSION': 'v26.0', 'TELEGRAM_BOT_TOKEN': '', 'TELEGRAM_BOT_USERNAME': '',
     'TELEGRAM_WEBHOOK_SECRET': secrets.token_urlsafe(32),
+    'EXCHANGE_PROVIDER': 'tgju_sana', 'EXCHANGE_CACHE_TTL': '86400',
 }
 path = Path('/etc/farstarnexa/nexa.env')
 path.write_text('\n'.join(f'{k}={v}' for k,v in values.items())+'\n')

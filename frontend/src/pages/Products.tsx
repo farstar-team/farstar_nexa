@@ -48,6 +48,9 @@ export function PricePreview({ price }: { price: Price }) {
 
 export function productPayload(data: FormData) {
   const value = (key: string) => String(data.get(key) ?? "");
+  const directPrice = data.has("direct_price");
+  const useLiveRate = data.has("use_live_rate");
+  const adjustmentEnabled = data.has("adjustment_enabled");
   const timestamp = (key: string) =>
     value(key) ? new Date(value(key)).toISOString() : null;
   return {
@@ -60,7 +63,13 @@ export function productPayload(data: FormData) {
     base_price: value("base_price"),
     base_currency: value("base_currency"),
     output_currency: value("output_currency"),
-    pricing_mode: value("pricing_mode"),
+    pricing_mode: directPrice
+      ? "MANUAL"
+      : useLiveRate
+        ? adjustmentEnabled
+          ? "LIVE_WITH_ADJUSTMENT"
+          : "LIVE"
+        : "MANUAL",
     manual_rate: value("manual_rate") || null,
     url: value("url"),
     custom_fields: Object.fromEntries(
@@ -73,6 +82,9 @@ export function productPayload(data: FormData) {
         }),
     ),
     pricing: {
+      direct_price: directPrice,
+      adjustment_enabled: adjustmentEnabled,
+      rate_source: value("rate_source") || "tgju_sana",
       percentage: value("percentage") || "0",
       fixed: value("fixed") || "0",
       rounding: value("rounding") || "0",
@@ -212,12 +224,26 @@ export function ProductEditor({
           currencies,
           product?.output_currency ?? "TOMAN",
         )}
-        {choices(
-          "pricing_mode",
-          "روش قیمت‌گذاری",
-          ["MANUAL", "LIVE", "LIVE_WITH_ADJUSTMENT"],
-          product?.pricing_mode,
-        )}
+        <Field label="کنترل نرخ و سود">
+          <label className="toggle-card">
+            <input
+              type="checkbox"
+              name="use_live_rate"
+              defaultChecked={product?.pricing_mode !== "MANUAL"}
+            />
+            <span>
+              <b>استفاده از نرخ ارز آنلاین</b>
+              <small>نرخ ایرانی انتخاب‌شده هنگام پیش‌نمایش و ارسال خوانده می‌شود.</small>
+            </span>
+          </label>
+        </Field>
+        <Field label="منبع نرخ ارز">
+          <select name="rate_source" defaultValue={product?.pricing.rate_source ?? "tgju_sana"}>
+            <option value="tgju_sana">TGJU Sana (رسمی)</option>
+            <option value="bonbast">Bonbast (بازار آزاد؛ نیازمند حساب تجاری)</option>
+            <option value="open_er_api">منبع مرجع بین‌المللی</option>
+          </select>
+        </Field>
         <Field label="نرخ دستی (یک واحد ارز پایه)">
           <input
             name="manual_rate"
@@ -229,12 +255,38 @@ export function ProductEditor({
         </Field>
       </div>
       <p className="notice">
-        نرخ آنلاین، نرخ مرجع روزانه است؛ برای قیمت بازار آزاد ایران نرخ دستی
-        خودتان را وارد کنید. نرخ خالی از تنظیمات ارز Workspace خوانده می‌شود.
+        منبع پیش‌فرض نرخ، سرویس Sana از TGJU است. اگر نرخ در دسترس نبود، حالت
+        دستی یا fallback را نگه دارید تا ارسال قیمت متوقف یا با نرخ مشخص شما
+        انجام شود.
       </p>
+      <label className="toggle-card">
+        <input
+          type="checkbox"
+          name="direct_price"
+          defaultChecked={Boolean(product?.pricing.direct_price)}
+        />
+        <span>
+          <b>قیمت مستقیم فروشنده</b>
+          <small>قیمت پایه همین قیمت نهایی است؛ تبدیل ارز و درصد سود/کارمزد اعمال نمی‌شود.</small>
+        </span>
+      </label>
       <details open>
         <summary>تعدیل، گردکردن و حدود قیمت</summary>
         <div className="form-grid">
+          <label className="toggle-card">
+            <input
+              type="checkbox"
+              name="adjustment_enabled"
+              defaultChecked={
+                product?.pricing.adjustment_enabled ??
+                product?.pricing_mode !== "LIVE"
+              }
+            />
+            <span>
+              <b>اعمال سود یا کارمزد</b>
+              <small>درصد و مبلغ تعدیل زیر روی نرخ تبدیل‌شده اعمال می‌شود.</small>
+            </span>
+          </label>
           {(
             [
               ["percentage", "درصد تعدیل (+ / −)"],
@@ -261,7 +313,8 @@ export function ProductEditor({
           )}
         </div>
         <small>
-          STOP یعنی توقف امن ارسال قیمت. تعدیل در حالت LIVE اعمال نمی‌شود.
+          STOP یعنی توقف امن ارسال قیمت. این گزینه‌ها را می‌توانید هر زمان
+          خاموش و روشن کنید.
         </small>
       </details>
       <details>

@@ -193,10 +193,12 @@ def ensure_lead(db, account, execution):
 
 def template_context(db, execution, product):
     context = execution.context
+    media = db.get(InstagramMedia, execution.media_id) if execution.media_id else None
     values = {
-        "customer": {"name": context.get("display_name") or context["sender"]},
-        "comment": {"text": context["text"]},
+        "customer": {"id": context["sender"], "name": context.get("display_name") or context["sender"]},
+        "comment": {"id": context.get("event_id", execution.event_id), "text": context["text"]},
         "instagram": {"username": context.get("display_name", "")},
+        "media": {"caption": media.caption if media else "", "url": media.permalink if media else ""},
     }
     pricing = None
     if product:
@@ -206,6 +208,8 @@ def template_context(db, execution, product):
         values["product"] = {
             "name": product.name,
             "description": product.description,
+            "sku": product.sku,
+            "availability": product.availability,
             "base_price": str(product.base_price),
             "base_currency": product.base_currency,
             "price": pricing["formatted_price"],
@@ -213,9 +217,15 @@ def template_context(db, execution, product):
                 product.output_currency
             ],
             "converted_price": pricing["converted_price"],
+            "original_price": pricing["original_price"],
+            "discount": pricing["discount"],
             "url": product.url,
         }
-        values["exchange"] = {"rate": pricing["rate"], "updated_at": pricing["updated_at"]}
+        values["exchange"] = {
+            "rate": pricing["rate"],
+            "source": pricing["source"],
+            "updated_at": pricing["updated_at"],
+        }
     return values, pricing
 
 

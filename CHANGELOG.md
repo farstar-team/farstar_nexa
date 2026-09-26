@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0] - 2026-09-26
+
+- Added Iranian Sana exchange-rate support with cached, fail-closed provider handling and optional Bonbast configuration.
+- Added direct seller pricing, independent online-rate and profit/fee toggles, and expanded safe message variables.
+- Added cursor-aware variable insertion and drag-and-drop tokens in the flow editor.
+- Added the public Persian product landing page and restored a visible mobile logout action.
+
 ## [0.2.1] - 2026-09-25
 
 - Completed the product catalogue list with linked-media and automation counts, last-update timestamps, explicit activation controls and referentially safe deletion.

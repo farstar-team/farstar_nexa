@@ -289,7 +289,15 @@ code {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
+.logout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.logout-button:hover { color: #b33c3c; }
 .topbar-divider {
   height: 25px;
   width: 1px;
@@ -1582,9 +1590,7 @@ meter::-webkit-meter-optimum-value {
     font-size: 9px;
     padding: 4px 7px;
   }
-  .topbar-actions .logout-button {
-    display: none;
-  }
+  .topbar-actions .logout-button span { display: inline; }
   .topbar-divider {
     display: none;
   }

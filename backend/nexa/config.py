@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     telegram_webhook_secret: str = ""
     exchange_provider: str = "open_er_api"
     exchange_cache_ttl: int = 86400
+    bonbast_api_url: str = "https://www.bonbast.com/api"
+    bonbast_username: str = ""
+    bonbast_hash: str = ""
 
     @field_validator("exchange_cache_ttl")
     @classmethod

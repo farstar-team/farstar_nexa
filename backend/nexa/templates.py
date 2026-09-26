@@ -1,19 +1,28 @@
 import re
 
 VARIABLES = {
+    "customer.id",
     "customer.name",
+    "comment.id",
     "comment.text",
     "product.name",
     "product.description",
+    "product.sku",
+    "product.availability",
     "product.base_price",
     "product.base_currency",
     "product.price",
     "product.currency",
     "product.converted_price",
+    "product.original_price",
+    "product.discount",
     "product.url",
     "exchange.rate",
+    "exchange.source",
     "exchange.updated_at",
     "instagram.username",
+    "media.caption",
+    "media.url",
 }
 TOKEN = re.compile(r"{{\s*([a-z_]+\.[a-z_]+)\s*}}")
 

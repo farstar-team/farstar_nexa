@@ -44,6 +44,9 @@ export const commerceFa: Record<string, string> = {
   sample: "نمونه",
   fixed_conversion: "تبدیل ثابت واحد",
   open_er_api: "نرخ مرجع روزانه",
+  tgju_sana: "نرخ رسمی Sana از TGJU",
+  bonbast: "نرخ بازار آزاد Bonbast",
+  direct_price: "قیمت مستقیم فروشنده",
   manual_fallback: "نرخ دستی جایگزین",
   exchange_rate_unavailable:
     "نرخ آنلاین معتبر در دسترس نیست. نرخ دستی یا fallback را تنظیم کنید.",
@@ -73,6 +76,7 @@ export const commerceFa: Record<string, string> = {
   rendered_message_too_long: "متن نهایی بیشتر از ۱۰۰۰ نویسه است.",
   product_required: "برای این اقدام یک محصول انتخاب کنید.",
   indicative_daily_rate: "نرخ روزانهٔ مرجع؛ لزوماً نرخ بازار آزاد ایران نیست.",
+  direct_price_currency_mismatch: "در حالت قیمت مستقیم، ارز پایه و ارز نمایش باید یکسان باشند.",
   unsupported_media_surface: "این نسخه فقط کامنت پست و ریل را پشتیبانی می‌کند.",
   delivery_unknown_manual_review:
     "نتیجهٔ ارسال نامشخص است؛ برای جلوگیری از پیام تکراری، خودکار تکرار نمی‌شود.",

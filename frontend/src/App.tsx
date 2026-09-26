@@ -37,6 +37,7 @@ import Admin from "./pages/Admin";
 import Products from "./pages/Products";
 import Media from "./pages/Media";
 import Leads from "./pages/Leads";
+import Landing from "./pages/Landing";
 import { Package, Images, Users } from "lucide-react";
 
 const navigation = [
@@ -60,6 +61,7 @@ export default function App() {
     localStorage.getItem("nexa-theme") === "dark",
   );
   const [logoutError, setLogoutError] = useState<unknown>();
+  const [showAuth, setShowAuth] = useState(false);
   const me = useQuery({
     queryKey: ["me"],
     queryFn: () => api<User>("/auth/me"),
@@ -91,7 +93,7 @@ export default function App() {
     );
   if (!me.data) {
     if (me.error instanceof ApiError && me.error.status === 401)
-      return <Auth config={config.data} />;
+      return showAuth ? <Auth config={config.data} /> : <Landing onStart={() => setShowAuth(true)} />;
     return (
       <div className="initial-loading">
         <ErrorNotice error={me.error} />
@@ -259,7 +261,7 @@ export default function App() {
               <b>{user.username}</b>
             </button>
             <button
-              className="icon-button logout-button"
+              className="logout-button profile-action"
               aria-label={t("logout")}
               onClick={async () => {
                 try {
@@ -272,6 +274,7 @@ export default function App() {
               }}
             >
               <LogOut size={18} />
+              <span>{t("logout")}</span>
             </button>
           </div>
         </header>

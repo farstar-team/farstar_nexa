@@ -84,6 +84,8 @@ sudo farstarnexa ssl
 
 Caddy obtains and renews certificates automatically. Domain changes update `BASE_URL` and recreate only the relevant application/proxy services. Configure the new Meta redirect and webhook URLs in the Meta app dashboard. `farstarnexa domain remove` returns to loopback-only access; it retains certificate files for recovery. Domain and SSL operations are also queued from the SUPER_ADMIN panel.
 
+Product pricing defaults to the Iranian TGJU Sana service (`EXCHANGE_PROVIDER=tgju_sana`) and fails closed when the feed is unavailable. Sellers can choose a manual rate, enable a percentage/fixed adjustment, or mark the entered price as direct. The optional Bonbast source requires its own commercial credentials and is never used implicitly.
+
 ## Backups, restore and updates
 
 ```bash
