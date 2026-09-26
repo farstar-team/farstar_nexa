@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.5] - 2026-09-26
+
+- Preserved the configured `www` host when changing the public domain and kept diagnostics compatible with multiple Caddy hosts.
+
 ## [0.5.4] - 2026-09-26
 
 - Simplified product pricing into mutually exclusive converted-price and direct-price modes.
