@@ -255,7 +255,7 @@ export function ProductEditor({
         </Field>
         <Field label="منبع نرخ ارز">
           <select name="rate_source" defaultValue={product?.pricing.rate_source ?? "tgju_sana"}>
-            <option value="tgju_sana">TGJU Sana (رسمی)</option>
+            <option value="tgju_sana">دلار آزاد TGJU (به ریال، تبدیل به تومان)</option>
           </select>
         </Field>
         <Field label="نرخ دستی (یک واحد ارز پایه)">
@@ -269,9 +269,9 @@ export function ProductEditor({
         </Field>
       </div>
       <p className="notice">
-        منبع پیش‌فرض نرخ، سرویس Sana از TGJU است. اگر نرخ در دسترس نبود، حالت
-        دستی یا fallback را نگه دارید تا ارسال قیمت متوقف یا با نرخ مشخص شما
-        انجام شود.
+        منبع پیش‌فرض نرخ، صفحهٔ «دلار آزاد» TGJU است. TGJU عدد را به ریال
+        منتشر می‌کند و Nexa هنگام نمایش تومان، تبدیل ریال به تومان را انجام
+        می‌دهد. اگر نرخ در دسترس نبود، حالت دستی یا fallback را نگه دارید.
       </p>
       <label className="toggle-card">
         <input

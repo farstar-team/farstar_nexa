@@ -1,6 +1,6 @@
-import { useState } from "react";
-import type { FormEvent, ReactNode } from "react";
-import { AlertCircle, Inbox, LoaderCircle, X } from "lucide-react";
+import { Children, cloneElement, isValidElement, useId, useState } from "react";
+import type { FormEvent, ReactElement, ReactNode } from "react";
+import { AlertCircle, CircleHelp, Inbox, LoaderCircle, X } from "lucide-react";
 import { ApiError } from "./api";
 import { t } from "./i18n";
 
@@ -48,21 +48,55 @@ export function Badge({ value }: { value: string }) {
     </span>
   );
 }
+export function HelpTip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span
+      className="help-tip"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        className="help-tip-button"
+        aria-label="توضیح این گزینه"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <CircleHelp size={15} />
+      </button>
+      {open && <span className="help-tip-popover" role="tooltip">{text}</span>}
+    </span>
+  );
+}
 export function Field({
   label,
   children,
   hint,
+  help,
 }: {
   label: string;
   children: ReactNode;
   hint?: string;
+  help?: string;
 }) {
+  const fieldId = useId();
+  const labeledChildren = Children.map(children, (child) =>
+    isValidElement(child) &&
+    typeof child.type === "string" &&
+    ["input", "select", "textarea"].includes(child.type)
+      ? (() => {
+          const element = child as ReactElement<{ id?: string }>;
+          return cloneElement(element, { id: element.props.id ?? fieldId });
+        })()
+      : child,
+  );
   return (
-    <label className="field">
-      <span>{t(label)}</span>
-      {children}
+    <div className="field">
+      <div className="field-label"><label htmlFor={fieldId}>{t(label)}</label>{help && <HelpTip text={help} />}</div>
+      {labeledChildren}
       {hint && <small>{t(hint)}</small>}
-    </label>
+    </div>
   );
 }
 export function PageTitle({

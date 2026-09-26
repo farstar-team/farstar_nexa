@@ -43,7 +43,7 @@ export const commerceFa: Record<string, string> = {
   manual: "دستی",
   sample: "نمونه",
   fixed_conversion: "تبدیل ثابت واحد",
-  tgju_sana: "نرخ رسمی Sana از TGJU",
+  tgju_sana: "نرخ دلار آزاد از TGJU",
   direct_price: "قیمت مستقیم فروشنده",
   manual_fallback: "نرخ دستی جایگزین",
   exchange_rate_unavailable:

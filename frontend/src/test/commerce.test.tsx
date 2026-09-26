@@ -249,6 +249,7 @@ describe("commerce user workflows", () => {
       <FlowEditor rule={null} accounts={[account]} done={done} />,
     );
     await user.type(screen.getByLabelText("نام اتوماسیون"), "قیمت تور");
+    await screen.findByRole("option", { name: "تور دبی" });
     await user.selectOptions(screen.getByLabelText("محصول"), product.id);
     await user.click(screen.getByRole("button", { name: "مرحله بعد" }));
     expect(screen.getByLabelText("قالب پیام")).toBeTruthy();

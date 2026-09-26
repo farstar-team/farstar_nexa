@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal, localcontext
@@ -139,16 +140,28 @@ def _walk_sana(payload):
 
 
 class TgjuSanaProvider:
-    """Iranian Sana sell rates published by TGJU's official JSON service."""
+    """Iranian free-market rates published on TGJU's currency profiles.
+
+    TGJU renders these values in rial. The pricing engine keeps the source
+    value in rial and applies the existing rial/toman conversion only when
+    the product output currency is TOMAN.
+    """
 
     name = "tgju_sana"
-    url = "https://www.tgju.org/?act=sanarateservice&client=tgju&noview&type=json"
-    keys = {"USD": "sana_sell_usd", "EUR": "sana_sell_eur", "AED": "sana_sell_aed"}
+    url = "https://www.tgju.org/profile/price_dollar_rl"
+    urls = {
+        "USD": "https://www.tgju.org/profile/price_dollar_rl",
+        "EUR": "https://www.tgju.org/profile/price_eur",
+        "AED": "https://www.tgju.org/profile/price_aed",
+    }
+    # Legacy JSON keys are accepted only to keep old fixtures and cached
+    # integrations readable while the live source is the free-market page.
+    legacy_keys = {"USD": "sana_sell_usd", "EUR": "sana_sell_eur", "AED": "sana_sell_aed"}
 
     def health(self):
         try:
             with Redis.from_url(settings().redis_url, socket_timeout=2, socket_connect_timeout=2) as client:
-                status = client.get("fx:tgju_sana:health") or b"not_checked"
+                status = client.get("fx:tgju_free_market:health") or b"not_checked"
                 return {
                     "provider": self.name,
                     "status": status.decode() if isinstance(status, bytes) else status,
@@ -157,23 +170,43 @@ class TgjuSanaProvider:
             return {"provider": self.name, "status": "cache_unavailable"}
 
     def _fetch(self, now):
-        response = httpx.get(self.url, timeout=8)
-        response.raise_for_status()
-        payload = response.json()
         found = {}
-        if isinstance(payload, dict) and isinstance(payload.get("data"), list):
-            payload = {str(item.get("id")): item for item in payload["data"] if isinstance(item, dict)}
-        if not isinstance(payload, dict):
-            raise PricingUnavailable("exchange_rate_unavailable")
-        for currency, key in self.keys.items():
-            value = payload.get(key)
-            number = _number(
-                value.get("price") if isinstance(value, dict) and "price" in value else
-                value.get("p") if isinstance(value, dict) else value
+        # The public TGJU page exposes the current instrument in a stable
+        # data-col attribute. Values are in rial, which is the unit expected
+        # by the conversion code below.
+        for currency, url in self.urls.items():
+            response = httpx.get(url, timeout=8)
+            response.raise_for_status()
+            html = getattr(response, "text", "") or ""
+            match = re.search(
+                r'data-col=["\']info\.last_trade\.PDrCotVal["\'][^>]*>\s*([^<]+)',
+                html,
+                re.IGNORECASE,
             )
+            number = _number(match.group(1)) if match else None
             if number:
                 found[currency] = number
-        if set(found) != set(self.keys):
+        # Preserve compatibility with the old JSON test fixture and any
+        # already cached Sana payload while all live requests use the pages.
+        if set(found) != set(self.urls):
+            response = httpx.get(self.url, timeout=8)
+            response.raise_for_status()
+            try:
+                payload = response.json()
+            except (AttributeError, ValueError, TypeError):
+                payload = None
+            if isinstance(payload, dict) and isinstance(payload.get("data"), list):
+                payload = {str(item.get("id")): item for item in payload["data"] if isinstance(item, dict)}
+            if isinstance(payload, dict):
+                for currency, key in self.legacy_keys.items():
+                    value = payload.get(key)
+                    number = _number(
+                        value.get("price") if isinstance(value, dict) and "price" in value else
+                        value.get("p") if isinstance(value, dict) else value
+                    )
+                    if number:
+                        found[currency] = number
+        if set(found) != set(self.urls):
             raise PricingUnavailable("exchange_rate_unavailable")
         return {"rates": {key: str(value) for key, value in found.items()}, "fetched_at": now.timestamp()}
 
@@ -186,7 +219,9 @@ class TgjuSanaProvider:
             return ExchangeRate(base, quote, rate, "fixed_conversion", now, now + timedelta(days=1))
         try:
             with Redis.from_url(settings().redis_url, socket_connect_timeout=2, socket_timeout=2) as client:
-                key = "fx:tgju_sana:rates"
+                # Versioned namespace prevents the old Sana values from being
+                # reused after switching to the free-market profile.
+                key = "fx:tgju_free_market:rates"
                 raw = client.get(key)
                 data = json.loads(raw) if raw else None
                 if not data or float(data.get("expires_at", 0)) <= now.timestamp():
@@ -196,9 +231,9 @@ class TgjuSanaProvider:
                         data = self._fetch(now)
                         data["expires_at"] = now.timestamp() + settings().exchange_cache_ttl
                         client.set(key, json.dumps(data), ex=172800)
-                        client.set("fx:tgju_sana:health", "healthy", ex=86400)
+                        client.set("fx:tgju_free_market:health", "healthy", ex=86400)
                     except (httpx.HTTPError, ValueError, TypeError, PricingUnavailable):
-                        client.set("fx:tgju_sana:health", "unavailable", ex=3600)
+                        client.set("fx:tgju_free_market:health", "unavailable", ex=3600)
                         raise PricingUnavailable("exchange_rate_unavailable") from None
                 rates = {key: Decimal(str(value)) for key, value in data["rates"].items()}
                 irr_per_base = Decimal(1) if actual_base == "IRR" else rates[actual_base]
@@ -299,7 +334,7 @@ class BonbastProvider:
 
 PROVIDERS: dict[str, ExchangeRateProvider] = {
     # Kept only for backwards-compatible test fixtures and old records. New
-    # products expose TGJU Sana exclusively in the UI.
+    # products expose the TGJU free-market feed exclusively in the UI.
     "open_er_api": OpenExchangeProvider(),
     "tgju_sana": TgjuSanaProvider(),
     "bonbast": BonbastProvider(),
@@ -410,6 +445,6 @@ def calculate(db, product, *, sample_rate=None, now=None):
         expires_at=exchange.expires_at.isoformat() if exchange else None,
         warning="manual_fallback"
         if source == "manual_fallback"
-        else ("tgju_sana_rate" if exchange and source == "tgju_sana" else ""),
+        else ("tgju_free_market_rate" if exchange and source == "tgju_sana" else ""),
     )
     return result

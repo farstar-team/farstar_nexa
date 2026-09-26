@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FlaskConical, Pencil, Plus, Zap } from "lucide-react";
+import { Pencil, Plus, Zap } from "lucide-react";
 import { api } from "../api";
 import type { Account, Config, Rule } from "../api";
 import {
@@ -17,7 +17,8 @@ import {
 import { number, t } from "../i18n";
 import FlowEditor, { DryRun } from "./FlowEditor";
 
-export default function Automations({ config }: { config: Config }) {
+export default function Automations(_props: { config: Config }) {
+  void _props;
   const cache = useQueryClient();
   const accounts = useQuery({
     queryKey: ["accounts"],
@@ -28,7 +29,6 @@ export default function Automations({ config }: { config: Config }) {
     queryFn: () => api<Rule[]>("/automations"),
   });
   const [edit, setEdit] = useState<Rule | null | undefined>();
-  const [test, setTest] = useState(false);
   const [toggle, setToggle] = useState<Rule>();
   const [flowEdit, setFlowEdit] = useState<Rule | null | undefined>();
   const [dryRun, setDryRun] = useState<Rule>();
@@ -37,20 +37,8 @@ export default function Automations({ config }: { config: Config }) {
     <>
       <PageTitle title="automations" subtitle="automationsSub">
         <button disabled={!active.length} onClick={() => setFlowEdit(null)}>
-          ساخت Flow فروش
-        </button>
-        <button
-          className="secondary"
-          disabled={!active.some((a) => a.provider === "instagram_mock")}
-          onClick={() => setTest(true)}
-          hidden={!config.mock_mode}
-        >
-          <FlaskConical size={17} />
-          {t("testMessage")}
-        </button>
-        <button disabled={!active.length} onClick={() => setEdit(null)}>
           <Plus size={17} />
-          {t("newAutomation")}
+          ساخت اتوماسیون
         </button>
       </PageTitle>
       <ErrorNotice error={rules.error ?? accounts.error} />
@@ -59,8 +47,9 @@ export default function Automations({ config }: { config: Config }) {
       ) : !rules.data?.length ? (
         <div className="card">
           <Empty title="rulesEmpty" subtitle="ruleIntro">
-            <button disabled={!active.length} onClick={() => setEdit(null)}>
-              {t("newAutomation")}
+            <button disabled={!active.length} onClick={() => setFlowEdit(null)}>
+              <Plus size={17} />
+              ساخت اتوماسیون
             </button>
           </Empty>
         </div>
@@ -116,7 +105,7 @@ export default function Automations({ config }: { config: Config }) {
         </div>
       )}
       {flowEdit !== undefined && (
-        <Modal title="ساخت Flow فروش" close={() => setFlowEdit(undefined)}>
+        <Modal title="ساخت اتوماسیون" close={() => setFlowEdit(undefined)}>
           <FlowEditor
             rule={flowEdit}
             accounts={active}
@@ -232,47 +221,6 @@ export default function Automations({ config }: { config: Config }) {
                 />
               </Field>
             </div>
-          </Form>
-        </Modal>
-      )}
-      {test && (
-        <Modal title="testMessage" close={() => setTest(false)}>
-          <Form
-            label="sendTest"
-            submit={async (data) => {
-              await api("/messages/simulate", "POST", {
-                account_id: data.get("account_id"),
-                sender: data.get("sender"),
-                text: data.get("text"),
-                event_id: crypto.randomUUID(),
-              });
-              await cache.invalidateQueries({ queryKey: ["dashboard"] });
-            }}
-          >
-            <p className="notice">{t("testHint")}</p>
-            <Field label="account">
-              <select name="account_id">
-                {active
-                  .filter((a) => a.provider === "instagram_mock")
-                  .map((a) => (
-                    <option value={a.id} key={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-              </select>
-            </Field>
-            <Field label="sender">
-              <input
-                name="sender"
-                dir="ltr"
-                defaultValue="test_user"
-                required
-                maxLength={128}
-              />
-            </Field>
-            <Field label="message">
-              <textarea name="text" rows={4} required maxLength={2000} />
-            </Field>
           </Form>
         </Modal>
       )}

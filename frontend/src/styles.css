@@ -777,6 +777,43 @@ main {
 .field > span {
   font-weight: 500;
 }
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+.help-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  z-index: 4;
+}
+.help-tip-button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #b7cbc0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+}
+.help-tip-button:hover { background: var(--soft); }
+.help-tip-popover {
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(100% + 8px);
+  width: min(250px, 70vw);
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 30px #173b3122;
+  font-size: 11px;
+  line-height: 1.8;
+  font-weight: 400;
+}
 .field input,
 .field textarea,
 .field select,
@@ -790,6 +827,40 @@ main {
   font-size: 12px;
   min-height: 43px;
 }
+.field select,
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2322574b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 12px center;
+  background-size: 16px;
+  padding-inline-start: 38px;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, background-color .15s;
+}
+.field select:hover,
+select:hover { border-color: #a9c3b5; background-color: var(--soft); }
+select[multiple] { background-image: none; padding-inline-start: 12px; }
+input[type="checkbox"] {
+  appearance: none;
+  width: 46px !important;
+  height: 26px;
+  min-height: 26px !important;
+  flex: 0 0 46px;
+  margin: 0;
+  border: 1px solid #c4d1c9;
+  border-radius: 999px;
+  background-color: #cfd7d2;
+  background-image: radial-gradient(circle at 12px 50%, #fff 0 8px, transparent 8.5px);
+  cursor: pointer;
+  transition: background-color .18s, background-image .18s, border-color .18s;
+}
+input[type="checkbox"]:checked {
+  border-color: #2b8c69;
+  background-color: #319b73;
+  background-image: radial-gradient(circle at 34px 50%, #fff 0 8px, transparent 8.5px);
+}
+input[type="checkbox"]:focus-visible { outline: 3px solid #92baa6; outline-offset: 3px; }
 .field textarea {
   resize: vertical;
 }

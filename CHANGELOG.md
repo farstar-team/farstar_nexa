@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1] - 2026-09-26
+
+- Switched TGJU pricing from the official Sana feed to the free-market currency profiles, preserving rial values and converting to toman explicitly.
+- Added a versioned rate cache namespace so previously cached Sana values cannot be reused.
+- Moved the public guide to the root page and redirect `/guide` to `/`.
+- Renamed Flow creation to Automation creation and added Persian help tips for automation fields and actions.
+- Restyled select menus and all checkbox controls as accessible on/off switches.
+
 ## [0.5.0] - 2026-09-26
 
 - Redesigned the public guide hero with a new Farstar Nexa logo and clearer Persian copy.

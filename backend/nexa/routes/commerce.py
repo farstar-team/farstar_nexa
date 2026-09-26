@@ -135,8 +135,8 @@ def rates(user: User = Depends(current_user), db: Session = Depends(get_db)):
         "provider": PROVIDERS.get(active, PROVIDERS["tgju_sana"]).health(),
         "active_provider": active,
         "supported_providers": ["tgju_sana"],
-        "attribution_url": "https://www.tgju.org/sanarate-service",
-        "attribution": "نرخ فروش ارز سنا از سرویس رسمی TGJU.",
+        "attribution_url": "https://www.tgju.org/profile/price_dollar_rl",
+        "attribution": "نرخ دلار آزاد از صفحهٔ قیمت TGJU؛ مقدار منبع ریال است و در صورت انتخاب تومان تبدیل می‌شود.",
     }
 
 

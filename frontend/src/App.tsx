@@ -4,7 +4,6 @@ import {
   Activity,
   ArrowUpLeft,
   Bell,
-  BookOpen,
   ChevronLeft,
   FlaskConical,
   House,
@@ -39,7 +38,6 @@ import Admin from "./pages/Admin";
 import Products from "./pages/Products";
 import Media from "./pages/Media";
 import Leads from "./pages/Leads";
-import Landing from "./pages/Landing";
 import Support from "./pages/Support";
 import Notifications from "./pages/Notifications";
 import TelegramMiniApp from "./pages/TelegramMiniApp";
@@ -59,13 +57,19 @@ const navigation = [
   { key: "executions", icon: Workflow },
   { key: "activity", icon: Activity },
   { key: "support", icon: LifeBuoy },
-  { key: "guide", icon: BookOpen },
   { key: "settings", icon: SettingsIcon },
 ];
 export default function App() {
   if (location.pathname === "/telegram-mini-app") return <TelegramMiniApp />;
-  if (location.pathname === "/guide") return <Guide publicPage />;
+  if (location.pathname === "/guide") return <LegacyGuideRedirect />;
   return <PanelApp />;
+}
+
+function LegacyGuideRedirect() {
+  useEffect(() => {
+    window.location.replace("/");
+  }, []);
+  return <div className="initial-loading" dir="rtl">در حال انتقال به صفحه اصلی…</div>;
 }
 
 function PanelApp() {
@@ -108,7 +112,7 @@ function PanelApp() {
     );
   if (!me.data) {
     if (me.error instanceof ApiError && me.error.status === 401)
-      return showAuth ? <Auth config={config.data} /> : <Landing onStart={() => setShowAuth(true)} />;
+      return showAuth ? <Auth config={config.data} /> : <Guide publicPage onStart={() => setShowAuth(true)} />;
     return (
       <div className="initial-loading">
         <ErrorNotice error={me.error} />
@@ -151,9 +155,6 @@ function PanelApp() {
       break;
     case "notifications":
       content = <Notifications user={user} />;
-      break;
-    case "guide":
-      content = <Guide />;
       break;
     case "settings":
       content = <Settings user={user} />;
@@ -308,7 +309,7 @@ function PanelApp() {
             <div className="notice error">{t("connectionFailed")}</div>
           )}
           {content}
-          {page !== "guide" && <PageGuide page={page} />}
+          <PageGuide page={page} />
         </main>
         <footer className="main-footer">
           <span>{brand.nameFa}</span>

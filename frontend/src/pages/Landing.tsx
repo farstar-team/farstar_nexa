@@ -13,7 +13,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
           <img src={brand.mark} alt="" />
           <div><strong>{brand.nameFa}</strong><small>FARSTAR NEXA</small></div>
         </a>
-        <div className="landing-nav-actions"><a className="text-button" href="/guide">راهنمای استفاده</a><button className="secondary" onClick={onStart}>ورود به پنل</button></div>
+        <div className="landing-nav-actions"><a className="text-button" href="/">راهنمای استفاده</a><button className="secondary" onClick={onStart}>ورود به پنل</button></div>
       </header>
       <section className="landing-hero">
         <div className="landing-copy">

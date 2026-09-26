@@ -207,6 +207,28 @@ def test_tgju_sana_parser_accepts_p_fields(monkeypatch):
     assert data["rates"]["EUR"] == "650000"
 
 
+def test_tgju_free_market_parser_reads_profile_rials(monkeypatch):
+    values = {
+        "price_dollar_rl": "2,352,000",
+        "price_eur": "2,760,000",
+        "price_aed": "640,000",
+    }
+
+    class Response:
+        def __init__(self, value):
+            self.text = f'<span data-col="info.last_trade.PDrCotVal">{value}</span>'
+
+        def raise_for_status(self):
+            pass
+
+    def fetch(url, **kwargs):
+        return Response(values[next(key for key in values if key in url)])
+
+    monkeypatch.setattr(pricing.httpx, "get", fetch)
+    data = TgjuSanaProvider()._fetch(now_utc())
+    assert data["rates"] == {"USD": "2352000", "EUR": "2760000", "AED": "640000"}
+
+
 def test_discount_window_and_price_bounds():
     now = now_utc()
     config = {

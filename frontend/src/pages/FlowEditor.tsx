@@ -4,7 +4,7 @@ import { api } from "../api";
 import type { Account, Rule } from "../api";
 import type { Action, Media, Product } from "../commerce";
 import { newAction, variableLabels, variables } from "../commerce";
-import { ErrorNotice, Field, Form } from "../components";
+import { ErrorNotice, Field, Form, HelpTip } from "../components";
 import { t } from "../i18n";
 import ExecutionDetail from "./ExecutionDetail";
 
@@ -125,7 +125,7 @@ export default function FlowEditor({
         ))}
       </div>
       <section className="automation-start card">
-        <div><span className="eyebrow">شروع سریع</span><h3>از یک الگوی آماده شروع کنید</h3><p>فقط محصول و حساب را انتخاب کنید؛ شرط‌ها و اقدام‌های رایج از قبل آماده می‌شوند.</p></div>
+        <div><span className="eyebrow">شروع سریع <HelpTip text="یکی از دو الگوی آماده را بزنید تا شرط‌ها و اقدام‌های معمول خودکار پر شوند." /></span><h3>از یک الگوی آماده شروع کنید</h3><p>فقط محصول و حساب را انتخاب کنید؛ شرط‌ها و اقدام‌های رایج از قبل آماده می‌شوند.</p></div>
         <div className="automation-presets">
           <button type="button" className="secondary" onClick={() => applyPreset("price")}>پاسخ قیمت روی پست و ریلز</button>
           <button type="button" className="secondary" onClick={() => applyPreset("message")}>پاسخ به دایرکت</button>
@@ -134,14 +134,14 @@ export default function FlowEditor({
       <ErrorNotice error={error ?? products.error ?? media.error} />
       {step === 1 && (
         <>
-          <Field label="نام اتوماسیون">
+          <Field label="نام اتوماسیون" help="یک نام کوتاه انتخاب کنید تا بعداً این پاسخ را در فهرست اتوماسیون‌ها سریع پیدا کنید.">
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={120}
             />
           </Field>
-          <Field label="حساب Instagram">
+          <Field label="حساب اینستاگرام" help="حسابی را انتخاب کنید که کامنت یا پیام آن باید بررسی شود.">
             <select
               value={account}
               onChange={(e) => {
@@ -157,7 +157,7 @@ export default function FlowEditor({
               ))}
             </select>
           </Field>
-          <Field label="محرک">
+          <Field label="چه چیزی پاسخ را شروع کند؟" help="مشخص می‌کند پاسخ با کامنت روی پست/ریلز شروع شود یا با پیام دریافتی.">
             <select
               value={trigger}
               onChange={(e) => setTrigger(e.target.value)}
@@ -169,7 +169,7 @@ export default function FlowEditor({
               ))}
             </select>
           </Field>
-          <Field label="محصول">
+          <Field label="محصول" help="محصولی را انتخاب کنید تا قیمت و اطلاعات آن در پاسخ قابل استفاده باشد.">
             <select
               value={product}
               onChange={(e) => setProduct(e.target.value)}
@@ -184,7 +184,7 @@ export default function FlowEditor({
           </Field>
           {trigger === "instagram.comment" && (
             <>
-              <Field label="محدوده مدیا">
+              <Field label="این پاسخ برای کدام پست یا ریلز است؟" help="تعیین می‌کند پاسخ برای همه مدیاها، چند مدیای انتخابی یا مدیای متصل به محصول فعال شود.">
                 <select
                   value={scope}
                   onChange={(e) => setScope(e.target.value)}
@@ -201,7 +201,7 @@ export default function FlowEditor({
                 </select>
               </Field>
               {scope === "SPECIFIC_MEDIA" && (
-                <Field label="مدیاهای انتخاب‌شده">
+                <Field label="پست‌ها و ریلزهای انتخاب‌شده" help="فقط همین موارد با کامنت یا پیام مشتری، این اتوماسیون را اجرا می‌کنند.">
                   <select
                     multiple
                     value={mediaIds}
@@ -221,7 +221,7 @@ export default function FlowEditor({
               )}
             </>
           )}
-          <Field label="نوع تطبیق متن">
+          <Field label="پیام چگونه بررسی شود؟" help="انتخاب کنید متن باید دقیقاً برابر باشد، شامل کلمه باشد یا با آن شروع شود.">
             <select value={mode} onChange={(e) => setMode(e.target.value)}>
               {["any", "exact", "contains", "starts_with", "keyword_set"].map(
                 (m) => (
@@ -233,7 +233,7 @@ export default function FlowEditor({
             </select>
           </Field>
           {mode !== "any" && (
-            <Field label="کلمات (جداشده با ویرگول)">
+            <Field label="کلمه‌هایی که پاسخ را فعال می‌کنند" help="کلمه‌ها را با ویرگول جدا کنید؛ مثلاً قیمت، هزینه یا موجودی.">
               <input
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
@@ -241,7 +241,7 @@ export default function FlowEditor({
             </Field>
           )}
           <div className="form-grid">
-            <Field label="فاصله مجاز هر مشتری/محصول (ثانیه)">
+            <Field label="فاصله بین دو پاسخ به یک مشتری (ثانیه)" help="برای جلوگیری از پاسخ‌های تکراری، تا این مدت دوباره پاسخ مشابه ارسال نمی‌شود.">
               <input
                 type="number"
                 min={2}
@@ -250,7 +250,7 @@ export default function FlowEditor({
                 onChange={(e) => setCooldown(Number(e.target.value))}
               />
             </Field>
-            <Field label="اولویت">
+            <Field label="اولویت اجرای پاسخ" help="اگر چند اتوماسیون هم‌زمان منطبق شدند، عدد بزرگ‌تر زودتر بررسی می‌شود.">
               <input
                 type="number"
                 min={0}
@@ -270,7 +270,7 @@ export default function FlowEditor({
           </p>
           {actions.map((a, i) => (
             <section className="action-editor" key={i}>
-              <Field label={`اقدام ${i + 1}`}>
+              <Field label={`اقدام ${i + 1}`} help="این کار بعد از منطبق‌شدن محرک انجام می‌شود؛ مثل ارسال قیمت، ثبت مشتری یا افزودن برچسب.">
                 <select
                   value={a.type}
                   onChange={(e) => update(i, { type: e.target.value })}
@@ -292,7 +292,7 @@ export default function FlowEditor({
               </Field>
               {a.type.startsWith("SEND_") && (
                 <>
-                  <Field label="قالب پیام">
+                  <Field label="قالب پیام" help="متنی که برای مشتری ارسال می‌شود. از دکمه‌های متغیر برای نام، قیمت، محصول و لینک استفاده کنید.">
                     <textarea
                       ref={(element) => {
                         templateRefs.current[i] = element;
@@ -311,7 +311,7 @@ export default function FlowEditor({
                     />
                   </Field>
                   <details className="pretty-details">
-                    <summary>درج متغیر در پیام (کلیک یا بکش و رها کن)</summary>
+                    <summary>افزودن متغیر به متن پاسخ</summary>
                     <p className="field-help">متغیر در محل نشانگر متن درج می‌شود؛ می‌توانید آن را بکشید و داخل کادر متن رها کنید.</p>
                     <div className="variable-list">
                       {variables.map((v) => (
@@ -332,7 +332,7 @@ export default function FlowEditor({
                 </>
               )}
               {["ADD_TAG", "INTERNAL_NOTE"].includes(a.type) && (
-                <Field label="متن اقدام">
+                <Field label="اطلاعات این اقدام" help="مقدار لازم برای این اقدام را بنویسید؛ مثلاً نام برچسب یا یادداشت داخلی.">
                   <input
                     value={a.value}
                     maxLength={a.type === "ADD_TAG" ? 60 : 500}
@@ -341,7 +341,7 @@ export default function FlowEditor({
                 </Field>
               )}
               {a.type === "DELAY" && (
-                <Field label="تأخیر (ثانیه)">
+                <Field label="چند ثانیه صبر کند؟" help="قبل از اجرای اقدام بعدی این مقدار مکث می‌کند.">
                   <input
                     type="number"
                     min={0}
@@ -377,14 +377,17 @@ export default function FlowEditor({
               </div>
             </section>
           ))}
-          <button
-            type="button"
-            className="secondary"
-            disabled={actions.length >= 12}
-            onClick={() => setActions([...actions, newAction("ADD_TAG")])}
-          >
-            افزودن اقدام
-          </button>
+          <div className="action-with-help">
+            <button
+              type="button"
+              className="secondary"
+              disabled={actions.length >= 12}
+              onClick={() => setActions([...actions, newAction("ADD_TAG")])}
+            >
+              افزودن اقدام
+            </button>
+            <HelpTip text="یک اقدام دیگر به ترتیب اجرای اتوماسیون اضافه می‌کند." />
+          </div>
         </>
       )}
       {step === 3 && (

@@ -70,10 +70,7 @@
   align-items: flex-start;
   gap: 10px;
 }
-.media-choice input {
-  width: auto;
-  flex-shrink: 0;
-}
+.media-choice input[type="checkbox"] { width: 46px !important; flex-shrink: 0; }
 .media-choice span {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -118,6 +115,7 @@
 .automation-start h3 { margin: 5px 0; }
 .automation-start p { margin: 0; color: var(--muted); font-size: .82rem; }
 .automation-presets { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.action-with-help { display: inline-flex; align-items: center; gap: 8px; }
 .variable-list {
   display: flex;
   gap: 6px;
@@ -143,7 +141,7 @@
   padding: 12px;
   background: var(--surface);
 }
-.toggle-card input { width: auto; margin-top: 3px; }
+.toggle-card input[type="checkbox"] { width: 46px !important; margin-top: 0; }
 .toggle-card span { display: grid; gap: 4px; }
 .toggle-card small { color: var(--muted); line-height: 1.7; }
 .variable-list button { cursor: grab; }
