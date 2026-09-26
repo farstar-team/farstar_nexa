@@ -17,6 +17,7 @@ class User(Identity, Base):
     __tablename__ = "users"
     username: Mapped[str] = mapped_column(String(64), unique=True)
     email: Mapped[str] = mapped_column(String(254), unique=True)
+    google_sub: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(Text)
     role: Mapped[str] = mapped_column(String(20), default="USER")
     active: Mapped[bool] = mapped_column(Boolean, default=True)

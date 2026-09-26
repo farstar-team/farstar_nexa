@@ -1322,7 +1322,6 @@ meter::-webkit-meter-optimum-value {
 .guide-brand-name span { color: var(--muted); font-size: 11px; letter-spacing: .1em; }
 .guide-brand-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; position: relative; z-index: 1; }
 .guide-brand-pills span { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: #ffffffb8; padding: 7px 10px; border-radius: 999px; font-size: 10px; color: var(--text); }
-.guide-logo-download { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; }
 .guide-section { max-width: 1180px; margin: 0 auto 65px; }
 .guide-section .section-heading { margin-bottom: 27px; }
 .guide-demo { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); box-shadow: 0 25px 70px #173b3114; position: relative; }
@@ -1411,6 +1410,50 @@ details.pretty-details > div { border-top: 1px solid var(--line); padding: 15px 
 .auth-card .form-actions button {
   width: 100%;
   padding: 13px;
+}
+.google-login-area {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  text-align: center;
+}
+.google-login-area > small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.google-login-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  text-decoration: none;
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+.google-login-button:hover {
+  border-color: #8ab19b;
+  box-shadow: 0 8px 20px #173b3114;
+  transform: translateY(-1px);
+}
+.google-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border: 2px solid #4285f4;
+  border-radius: 50%;
+  color: #4285f4;
+  font: 700 13px Arial, sans-serif;
+}
+.google-login-unavailable {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
 }
 .auth-links {
   margin-top: 20px;

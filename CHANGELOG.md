@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.7] - 2026-09-26
+
+- Removed the public logo download button while keeping the brand asset available for the site.
+- Normalized product and message-template amounts so insignificant decimal zeroes are not shown.
+- Added secure Google OAuth login with state binding, verified email checks and existing-account linking.
+
 ## [0.5.6] - 2026-09-26
 
 - Simplified price display by removing decimal fractions from customer-facing amounts.

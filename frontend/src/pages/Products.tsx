@@ -14,7 +14,7 @@ import {
   Modal,
   PageTitle,
 } from "../components";
-import { currencies, formatAmount } from "../commerce";
+import { currencies, formatAmount, normalizeAmount } from "../commerce";
 import type { Media, Price, Product } from "../commerce";
 import { date, t } from "../i18n";
 
@@ -236,7 +236,7 @@ export function ProductEditor({
             step="0.000001"
             min="0"
             required
-            defaultValue={product?.base_price}
+            defaultValue={normalizeAmount(product?.base_price)}
           />
         </Field>
       </div>
@@ -305,7 +305,7 @@ export function ProductEditor({
               </select>
             </Field>
             <Field label="نرخ دستی جایگزین" hint="فقط زمانی استفاده می‌شود که نرخ آنلاین در دسترس نباشد.">
-              <input name="manual_rate" type="number" min="0.0000000001" step="any" defaultValue={product?.manual_rate ?? ""} />
+              <input name="manual_rate" type="number" min="0.0000000001" step="any" defaultValue={normalizeAmount(product?.manual_rate)} />
             </Field>
           </div>
           <p className="notice">
@@ -343,7 +343,7 @@ export function ProductEditor({
                 name={key}
                 type="number"
                 step="any"
-                defaultValue={product?.pricing[key] ?? ""}
+                defaultValue={normalizeAmount(product?.pricing[key])}
               />
             </Field>
           ))}
@@ -666,7 +666,7 @@ function RateSettings() {
       <ul>
         {query.data?.manual.map((r) => (
           <li key={r.id}>
-            {t(r.base_currency)} ← {t(r.quote_currency)}: {r.rate}
+            {t(r.base_currency)} ← {t(r.quote_currency)}: {formatAmount(r.rate)}
           </li>
         ))}
       </ul>

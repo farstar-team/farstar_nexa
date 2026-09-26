@@ -47,6 +47,8 @@ def test_customer_price_format_omits_decimals():
     assert pricing.format_price(Decimal("123.49")) == "123"
     assert pricing.format_price(Decimal("123.50")) == "124"
     assert pricing.format_price(Decimal("1234567.89")) == "1,234,568"
+    assert pricing.format_number("50.000000") == "50"
+    assert pricing.format_number("50.500000") == "50.5"
 
 
 @pytest.fixture

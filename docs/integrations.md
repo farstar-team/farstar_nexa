@@ -8,6 +8,14 @@ Real mode requires a Meta app configured for Instagram Login, a supported profes
 
 Before production traffic, validate the complete OAuth callback, webhook verification/subscription, inbound event deduplication, keyword reply and provider send receipt with a dedicated test account. A missing credential must fail clearly; it must never silently enable the mock adapter.
 
+## Google login
+
+Google sign-in is disabled until both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in the root-only environment file. In Google Cloud Console, create a Web application OAuth client, add the current public origin as an authorized JavaScript origin, and add this exact authorized redirect URI:
+
+`https://YOUR_DOMAIN/api/auth/google/callback`
+
+The callback is derived from `BASE_URL`, so changing the domain and applying the configuration updates it without changing database records. The server stores only Google's stable subject identifier; the Google access token is never stored.
+
 Nexa 0.2 uses only documented Instagram Login operations: `GET /<IG_USER_ID>/media` for owned professional media, comment webhook fields, `GET /<IG_COMMENT_ID>?fields=id,timestamp,media,from` to verify the original comment, and `POST /<IG_USER_ID>/messages` with `recipient.comment_id` for a private reply. It requests `instagram_business_basic`, `instagram_business_manage_comments` and `instagram_business_manage_messages`. The Meta app must subscribe the connected account to `comments,messages` and obtain the required access level through App Review for accounts outside app roles.
 
 Meta allows one private reply within seven days of a post/reel comment. The webhook notification time is not treated as comment creation time; Nexa reads the comment timestamp immediately before delivery. Follow-up messages are not sent until the recipient replies, and then only within the documented 24-hour window. Live-video comments and unsupported surfaces are rejected. Provider `unknown` results are quarantined for manual review rather than retried, avoiding duplicate customer messages.

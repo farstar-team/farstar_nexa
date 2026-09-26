@@ -36,6 +36,8 @@ Point the new domain to this server and run `sudo farstarnexa domain NEW_DOMAIN`
 
 The owner integration settings panel displays URLs derived from the current `BASE_URL`: `/api/instagram/callback`, `/webhooks/meta`, and `/webhooks/telegram`. Update the OAuth redirect URI and webhook callback in Meta Developer settings after a domain change. Keep the existing verification token private. For Telegram credentials stored through the panel, run `sudo farstarnexa telegram-webhook` after changing the domain; environment-configured bots are handled by the domain command. Verify public HTTPS and `/ready` after every change. Do not put deployment domains into source files.
 
+The owner integration settings panel also displays `/api/auth/google/callback` for Google login. Update that redirect URI in Google Cloud Console after a domain change.
+
 ### Installing a release
 
 `check-update` reads the official GitHub latest release and reports when none exists. `update vX.Y.Z` accepts only a newer semantic release tag from the fixed official repository. It checks disk space, clones to a new release directory, verifies VERSION, builds images before downtime, creates a pre-update backup, stops writers, migrates forward, starts new containers, and tests readiness before switching the current-release symlink. Configuration and bind-mounted data remain outside source directories. Never run `git reset --hard` over a production installation or replace a database with repository content.

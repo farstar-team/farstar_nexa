@@ -101,4 +101,5 @@ def public_config():
         "version": version(),
         "mock_mode": settings().mock_mode,
         "registration_enabled": settings().registration_enabled,
+        "google_login_enabled": settings().google_login_enabled,
     }

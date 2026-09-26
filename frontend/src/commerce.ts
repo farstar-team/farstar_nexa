@@ -105,6 +105,12 @@ export const formatAmount = (value: string | number | null | undefined) => {
     Math.round(amount),
   );
 };
+
+export const normalizeAmount = (value: string | number | null | undefined) => {
+  const text = String(value ?? "").trim();
+  if (!text || !/^-?\d+(\.\d+)?$/.test(text)) return text;
+  return text.replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "");
+};
 export const variables = [
   "customer.id",
   "customer.name",

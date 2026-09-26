@@ -1,3 +1,5 @@
+from urllib.parse import parse_qs, urlsplit
+
 from conftest import PASSWORD, sign_in
 from fastapi.testclient import TestClient
 from nexa.main import app
@@ -23,6 +25,82 @@ def test_registration_login_logout(client, db):
     assert client.post("/api/auth/logout").status_code == 200
     assert client.get("/api/auth/me").status_code == 401
     assert client.get("/api/auth/me", headers={"Cookie": "nexa_session=" + cookie}).status_code == 401
+
+
+def test_google_login_is_explicitly_unavailable_without_provider_credentials(client):
+    response = client.get("/api/auth/google/start", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?google=unavailable&auth=1"
+
+
+def test_google_oauth_creates_user_and_session(client, db, monkeypatch):
+    import nexa.routes.auth as auth_routes
+    from nexa.config import settings
+
+    monkeypatch.setattr(settings(), "base_url", "http://localhost:8080")
+    monkeypatch.setattr(settings(), "google_client_id", "client-id")
+    monkeypatch.setattr(settings(), "google_client_secret", "client-secret")
+
+    class OAuthRedis:
+        values = {}
+
+        @classmethod
+        def from_url(cls, *args, **kwargs):
+            return cls()
+
+        def set(self, key, value, **kwargs):
+            self.values[key] = value
+            return True
+
+        def get(self, key):
+            return self.values.get(key)
+
+        def delete(self, key):
+            self.values.pop(key, None)
+
+        def close(self):
+            pass
+
+    class OAuthResponse:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return self.payload
+
+    class OAuthClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def post(self, *args, **kwargs):
+            return OAuthResponse({"access_token": "provider-token"})
+
+        def get(self, *args, **kwargs):
+            return OAuthResponse({"sub": "google-123", "email": "google@example.com", "email_verified": True})
+
+    monkeypatch.setattr(auth_routes, "Redis", OAuthRedis)
+    monkeypatch.setattr(auth_routes.httpx, "Client", OAuthClient)
+    start = client.get("/api/auth/google/start", follow_redirects=False)
+    assert start.status_code == 303
+    state = parse_qs(urlsplit(start.headers["location"]).query)["state"][0]
+    callback = client.get(
+        "/api/auth/google/callback?code=authorization-code&state=" + state,
+        follow_redirects=False,
+    )
+    assert callback.status_code == 303
+    assert "google=success" in callback.headers["location"]
+    assert client.get("/api/auth/me").status_code == 200
+    user = db.scalar(select(User).where(User.email == "google@example.com"))
+    assert user is not None and user.google_sub == "google-123"
 
 
 def test_weak_password_never_echoed(client):

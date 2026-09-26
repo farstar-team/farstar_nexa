@@ -38,7 +38,7 @@ from pathlib import Path
 password = secrets.token_hex(32)
 values = {
     'ENVIRONMENT': 'development', 'BASE_URL': 'http://localhost:8080', 'COOKIE_SECURE': 'false',
-    'MOCK_MODE': 'false', 'REGISTRATION_ENABLED': 'true', 'SECRET_KEY': secrets.token_hex(32),
+    'MOCK_MODE': 'false', 'REGISTRATION_ENABLED': 'true', 'GOOGLE_CLIENT_ID': '', 'GOOGLE_CLIENT_SECRET': '', 'SECRET_KEY': secrets.token_hex(32),
     'ENCRYPTION_KEYS': base64.urlsafe_b64encode(os.urandom(32)).decode(), 'POSTGRES_PASSWORD': password,
     'DATABASE_URL': f'postgresql+psycopg://nexa:{password}@postgres:5432/nexa',
     'REDIS_URL': 'redis://redis:6379/0', 'DATA_DIR': '/var/lib/farstarnexa', 'CADDY_SITE': ':80',

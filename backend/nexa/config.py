@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     encryption_keys: str
     mock_mode: bool = False
     registration_enabled: bool = True
+    google_client_id: str = ""
+    google_client_secret: str = ""
     cookie_secure: bool = True
     session_hours: int = 24
     operations_dir: Path = Path("/runtime/operations")
@@ -75,9 +77,18 @@ class Settings(BaseSettings):
         return {
             "base_url": self.base_url,
             "instagram_callback": self.base_url + "/api/instagram/callback",
+            "google_callback": self.base_url + "/api/auth/google/callback",
             "meta_webhook": self.base_url + "/webhooks/meta",
             "telegram_webhook": self.base_url + "/webhooks/telegram",
         }
+
+    @property
+    def google_login_enabled(self) -> bool:
+        hostname = urlsplit(self.base_url).hostname
+        local_development = hostname in {"localhost", "127.0.0.1"}
+        return bool(self.google_client_id and self.google_client_secret) and (
+            self.base_url.startswith("https://") or local_development
+        )
 
     @model_validator(mode="after")
     def validate_security(self):

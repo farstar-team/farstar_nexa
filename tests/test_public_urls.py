@@ -14,6 +14,7 @@ def test_domain_change_updates_owner_urls_and_oauth(owner, monkeypatch, base):
     assert urls == {
         "base_url": base,
         "instagram_callback": base + "/api/instagram/callback",
+        "google_callback": base + "/api/auth/google/callback",
         "meta_webhook": base + "/webhooks/meta",
         "telegram_webhook": base + "/webhooks/telegram",
     }

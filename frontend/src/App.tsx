@@ -80,7 +80,10 @@ function PanelApp() {
     localStorage.getItem("nexa-theme") === "dark",
   );
   const [logoutError, setLogoutError] = useState<unknown>();
-  const [showAuth, setShowAuth] = useState(false);
+  const [showAuth, setShowAuth] = useState(() => {
+    const query = new URLSearchParams(location.search);
+    return query.has("auth") || query.has("google");
+  });
   const me = useQuery({
     queryKey: ["me"],
     queryFn: () => api<User>("/auth/me"),

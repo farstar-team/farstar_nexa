@@ -346,6 +346,17 @@ def format_price(value: Decimal) -> str:
     return f"{rounded:,.0f}"
 
 
+def format_number(value: Decimal | str | int | float) -> str:
+    """Return a decimal without insignificant trailing zeroes for message variables."""
+    number = Decimal(str(value))
+    if not number.is_finite():
+        return str(value)
+    text = format(number.normalize(), "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text or "0"
+
+
 def calculate(db, product, *, sample_rate=None, now=None):
     now = now or datetime.now(UTC)
     rule = PricingRule.model_validate(product.pricing or {})

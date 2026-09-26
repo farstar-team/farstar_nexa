@@ -41,6 +41,7 @@ export type User = {
 export type Config = {
   mock_mode: boolean;
   registration_enabled: boolean;
+  google_login_enabled?: boolean;
   version: string;
 };
 export type Account = {

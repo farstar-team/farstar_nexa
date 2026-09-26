@@ -1,5 +1,6 @@
 from nexa.models import Notification, User
 
+
 def test_support_ticket_and_reply(signed):
     created = signed.post(
         "/api/support/tickets",

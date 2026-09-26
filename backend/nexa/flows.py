@@ -21,7 +21,7 @@ from nexa.models import (
     User,
     Workspace,
 )
-from nexa.pricing import calculate
+from nexa.pricing import calculate, format_number
 from nexa.providers import DeliveryRejected, DeliveryUnknown, InstagramProvider, RateLimited, provider
 from nexa.templates import render
 
@@ -210,19 +210,19 @@ def template_context(db, execution, product):
             "description": product.description,
             "sku": product.sku,
             "availability": product.availability,
-            "base_price": str(product.base_price),
+            "base_price": format_number(product.base_price),
             "base_currency": product.base_currency,
             "price": pricing["formatted_price"],
             "currency": {"USD": "دلار", "EUR": "یورو", "AED": "درهم", "IRR": "ریال", "TOMAN": "تومان"}[
                 product.output_currency
             ],
-            "converted_price": pricing["converted_price"],
-            "original_price": pricing["original_price"],
-            "discount": pricing["discount"],
+            "converted_price": format_number(pricing["converted_price"]),
+            "original_price": format_number(pricing["original_price"]),
+            "discount": format_number(pricing["discount"]),
             "url": product.url,
         }
         values["exchange"] = {
-            "rate": pricing["rate"],
+            "rate": format_number(pricing["rate"]),
             "source": pricing["source"],
             "updated_at": pricing["updated_at"],
         }

@@ -10,6 +10,14 @@ import { t } from "../i18n";
 export default function Auth({ config }: { config?: Config }) {
   const [mode, setMode] = useState<"login" | "register" | "request" | "recovery">(() => new URLSearchParams(location.search).has("recovery") ? "recovery" : "login");
   const cache = useQueryClient();
+  const googleStatus = new URLSearchParams(location.search).get("google");
+  const googleMessage = googleStatus === "failed"
+    ? "googleLoginFailed"
+    : googleStatus === "cancelled"
+      ? "googleLoginCancelled"
+      : googleStatus === "unavailable"
+        ? "googleLoginUnavailable"
+        : "";
   return (
     <div className="auth-layout">
       <div className="auth-form-side">
@@ -24,6 +32,7 @@ export default function Auth({ config }: { config?: Config }) {
           <p className="eyebrow">{brand.name}</p>
           <h1>{t(mode)}</h1>
           <p>{t(mode === "recovery" ? "recoveryHint" : mode === "request" ? "recoveryRequestHint" : mode + "Sub")}</p>
+          {googleMessage && <p className={`notice ${googleStatus === "unavailable" ? "warning" : "error"}`} role="alert">{t(googleMessage)}</p>}
           <Form
             key={mode}
             label={mode}
@@ -86,6 +95,19 @@ export default function Auth({ config }: { config?: Config }) {
               <input name="password" type="password" required dir="ltr" minLength={mode === "login" ? 1 : 12} maxLength={256} autoComplete={mode === "login" ? "current-password" : "new-password"} />
             </Field>}
           </Form>
+          {mode === "login" && (
+            <div className="google-login-area">
+              {config?.google_login_enabled ? (
+                <a className="google-login-button" href="/api/auth/google/start">
+                  <span className="google-mark" aria-hidden="true">G</span>
+                  {t("googleLogin")}
+                </a>
+              ) : (
+                <p className="google-login-unavailable">{t("googleLoginUnavailable")}</p>
+              )}
+              <small>{t("googleLoginSub")}</small>
+            </div>
+          )}
           <div className="auth-links">
             {config?.registration_enabled && (
               <button
