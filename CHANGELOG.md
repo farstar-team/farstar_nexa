@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.2] - 2026-09-26
+
+- Redirected the removed `/guide` URL to the root page at the Caddy layer.
+
 ## [0.5.1] - 2026-09-26
 
 - Switched TGJU pricing from the official Sana feed to the free-market currency profiles, preserving rial values and converting to toman explicitly.

@@ -10,6 +10,8 @@
         Content-Security-Policy "default-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; script-src 'self' https://telegram.org; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         -Server
     }
+    @legacy_guide path /guide /guide/*
+    redir @legacy_guide / 308
     @backend path /api/* /webhooks/* /health /ready
     handle @backend {
         reverse_proxy api:8000
