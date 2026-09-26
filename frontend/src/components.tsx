@@ -93,9 +93,10 @@ export function Field({
         })()
       : child,
   );
+  const helpText = help ?? (hint ? t(hint) : `این گزینه برای تنظیم «${t(label)}» است. اگر مطمئن نیستید، مقدار پیش‌فرض را نگه دارید.`);
   return (
     <div className="field">
-      <div className="field-label"><label htmlFor={fieldId}>{t(label)}</label>{required && <span className="field-required">الزامی</span>}{help && <HelpTip text={help} />}</div>
+      <div className="field-label"><label htmlFor={fieldId}>{t(label)}</label>{required && <span className="field-required">الزامی</span>}{helpText && <HelpTip text={helpText} />}</div>
       {labeledChildren}
       {hint && <small>{t(hint)}</small>}
     </div>

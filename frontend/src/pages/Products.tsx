@@ -9,11 +9,12 @@ import {
   ErrorNotice,
   Field,
   Form,
+  HelpTip,
   Loading,
   Modal,
   PageTitle,
 } from "../components";
-import { currencies } from "../commerce";
+import { currencies, formatAmount } from "../commerce";
 import type { Media, Price, Product } from "../commerce";
 import { date, t } from "../i18n";
 
@@ -25,10 +26,10 @@ export function PricePreview({ price }: { price: Price }) {
       </strong>
       <dl>
         {[
-          ["قیمت تبدیل‌شده", price.converted_price],
-          ["تعدیل", price.adjustment],
-          ["تخفیف", price.discount],
-          ["نرخ تبدیل", price.rate],
+          ["قیمت تبدیل‌شده", formatAmount(price.converted_price)],
+          ["سود یا کارمزد", formatAmount(price.adjustment)],
+          ["تخفیف", formatAmount(price.discount)],
+          ["نرخ تبدیل", formatAmount(price.rate)],
           ["منبع نرخ", t(price.source)],
           ["زمان نرخ", date(price.updated_at)],
         ].map(([label, value]) => (
@@ -313,7 +314,7 @@ export function ProductEditor({
         </section>
       )}
       {pricingMode === "converted" && <details className="pretty-details" open>
-        <summary>تعدیل، گردکردن و حدود قیمت</summary>
+        <summary>سود، کارمزد و گرد کردن قیمت</summary>
         <div className="form-grid">
           <label className="toggle-card">
             <input
@@ -325,20 +326,19 @@ export function ProductEditor({
               }
             />
             <span>
-              <b>اعمال سود یا کارمزد</b>
+              <b className="label-with-help">اعمال سود یا کارمزد <HelpTip text="اگر روشن باشد، درصد یا مبلغی که پایین می‌نویسید روی قیمت تبدیل‌شده اعمال می‌شود." /></b>
               <small>درصد و مبلغ تعدیل زیر روی نرخ تبدیل‌شده اعمال می‌شود.</small>
             </span>
           </label>
           {(
             [
-              ["percentage", "درصد تعدیل (+ / −)"],
-              ["fixed", "مبلغ تعدیل (+ / −)"],
-              ["rounding", "گردکردن به مضرب"],
-              ["minimum", "حداقل قیمت"],
-              ["maximum", "حداکثر قیمت"],
+              ["percentage", "درصد سود یا کارمزد", "مثلاً ۱۰ یعنی قیمت ۱۰٪ بیشتر شود؛ عدد منفی قیمت را کم می‌کند."],
+              ["fixed", "مبلغ سود یا کارمزد", "یک مبلغ ثابت به قیمت اضافه یا از آن کم می‌شود؛ مثلاً ۱۰۰٬۰۰۰ تومان."],
+              ["minimum", "حداقل قیمت", "اگر قیمت از این مقدار کمتر باشد، همین حداقل قیمت استفاده می‌شود."],
+              ["maximum", "حداکثر قیمت", "اگر قیمت از این مقدار بیشتر باشد، همین حداکثر قیمت استفاده می‌شود."],
             ] as const
-          ).map(([key, label]) => (
-            <Field key={key} label={label}>
+          ).map(([key, label, help]) => (
+            <Field key={key} label={label} help={help}>
               <input
                 name={key}
                 type="number"
@@ -347,6 +347,14 @@ export function ProductEditor({
               />
             </Field>
           ))}
+          <Field label="گرد کردن قیمت" help="قیمت نهایی به نزدیک‌ترین مضرب انتخابی گرد می‌شود؛ مثلاً ۱۰٬۰۰۰ یا ۱۰۰٬۰۰۰ تومان.">
+            <select name="rounding" defaultValue={String(Math.round(Number(product?.pricing.rounding ?? 0)))}>
+              <option value="0">بدون گرد کردن</option>
+              <option value="10000">نزدیک‌ترین ۱۰٬۰۰۰ تومان</option>
+              <option value="100000">نزدیک‌ترین ۱۰۰٬۰۰۰ تومان</option>
+              <option value="1000000">نزدیک‌ترین ۱٬۰۰۰٬۰۰۰ تومان</option>
+            </select>
+          </Field>
           {choices(
             "fallback",
             "هنگام نبود نرخ آنلاین",
@@ -550,7 +558,7 @@ export default function Products() {
               </div>
               <p>{p.description}</p>
               <strong>
-                {p.base_price} {t(p.base_currency)}
+                {formatAmount(p.base_price)} {t(p.base_currency)}
               </strong>
               <p>
                 {t(p.pricing_mode)} · {t(p.availability)}

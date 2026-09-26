@@ -172,6 +172,8 @@
 }
 .toggle-card input[type="checkbox"] { width: 46px !important; margin-top: 0; }
 .toggle-card span { display: grid; gap: 4px; }
+.toggle-card .label-with-help { display: inline-flex; align-items: center; gap: 6px; }
+.toggle-card .help-tip { display: inline-flex; }
 .toggle-card small { color: var(--muted); line-height: 1.7; }
 .variable-list button { cursor: grab; }
 .variable-list button:active { cursor: grabbing; }

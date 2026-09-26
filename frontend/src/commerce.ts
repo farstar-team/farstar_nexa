@@ -98,6 +98,13 @@ export type ExecutionDetail = {
   }[];
 };
 export const currencies = ["USD", "EUR", "AED", "IRR", "TOMAN"];
+export const formatAmount = (value: string | number | null | undefined) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return String(value ?? "");
+  return new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(
+    Math.round(amount),
+  );
+};
 export const variables = [
   "customer.id",
   "customer.name",

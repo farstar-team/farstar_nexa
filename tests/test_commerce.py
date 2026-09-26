@@ -43,6 +43,12 @@ PRODUCT = {
 }
 
 
+def test_customer_price_format_omits_decimals():
+    assert pricing.format_price(Decimal("123.49")) == "123"
+    assert pricing.format_price(Decimal("123.50")) == "124"
+    assert pricing.format_price(Decimal("1234567.89")) == "1,234,568"
+
+
 @pytest.fixture
 def product(signed):
     response = signed.post("/api/products", json=PRODUCT)

@@ -1322,6 +1322,7 @@ meter::-webkit-meter-optimum-value {
 .guide-brand-name span { color: var(--muted); font-size: 11px; letter-spacing: .1em; }
 .guide-brand-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; position: relative; z-index: 1; }
 .guide-brand-pills span { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: #ffffffb8; padding: 7px 10px; border-radius: 999px; font-size: 10px; color: var(--text); }
+.guide-logo-download { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; }
 .guide-section { max-width: 1180px; margin: 0 auto 65px; }
 .guide-section .section-heading { margin-bottom: 27px; }
 .guide-demo { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); box-shadow: 0 25px 70px #173b3114; position: relative; }

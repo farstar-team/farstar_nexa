@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.6] - 2026-09-26
+
+- Simplified price display by removing decimal fractions from customer-facing amounts.
+- Added plain-language help for pricing adjustments and configurable rounding choices.
+- Added a downloadable Farstar Nexa wordmark to the public guide.
+- Clarified the guide preview label and expanded help icons across form fields.
+
 ## [0.5.5] - 2026-09-26
 
 - Preserved the configured `www` host when changing the public domain and kept diagnostics compatible with multiple Caddy hosts.

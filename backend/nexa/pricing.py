@@ -342,7 +342,8 @@ PROVIDERS: dict[str, ExchangeRateProvider] = {
 
 
 def format_price(value: Decimal) -> str:
-    return f"{value:,.2f}".rstrip("0").rstrip(".")
+    rounded = value.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    return f"{rounded:,.0f}"
 
 
 def calculate(db, product, *, sample_rate=None, now=None):
