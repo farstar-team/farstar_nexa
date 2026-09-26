@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.1] - 2026-09-26
+
+- Enabled Telegram Mini App SDK loading under the production Content Security Policy.
+
 ## [0.4.0] - 2026-09-26
 
 - Added support tickets and live-chat threads with admin replies and status management.

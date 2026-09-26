@@ -13,14 +13,7 @@ export default function TelegramMiniApp() {
   useEffect(() => {
     (async () => {
       try {
-        const existing = (window as TelegramWindow).Telegram?.WebApp;
-        const webApp = existing ?? await new Promise<WebApp | undefined>((resolve) => {
-          const script = document.createElement("script");
-          script.src = "https://telegram.org/js/telegram-web-app.js";
-          script.onload = () => resolve((window as TelegramWindow).Telegram?.WebApp);
-          script.onerror = () => resolve(undefined);
-          document.head.appendChild(script);
-        });
+        const webApp = (window as TelegramWindow).Telegram?.WebApp;
         webApp?.ready();
         webApp?.expand();
         if (webApp?.initData) await api("/telegram/webapp-auth", "POST", { init_data: webApp.initData });
