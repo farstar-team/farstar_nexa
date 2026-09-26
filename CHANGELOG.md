@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4] - 2026-09-26
+
+- Added a public illustrated usage guide at `/guide` with an animated desktop walkthrough.
+- Added Persian FAQ content covering Inbox, Automations, pricing, support and Telegram Mini App usage.
+- Added guide access from the landing page and authenticated panel navigation.
+- Added clear explanations of Inbox and Automation behavior for new users.
+
 ## [0.4.3] - 2026-09-26
 
 - Mark queued email and Telegram notifications as failed when worker delivery errors occur.

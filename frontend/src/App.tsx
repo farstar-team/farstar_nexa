@@ -4,6 +4,7 @@ import {
   Activity,
   ArrowUpLeft,
   Bell,
+  BookOpen,
   ChevronLeft,
   FlaskConical,
   House,
@@ -42,6 +43,7 @@ import Landing from "./pages/Landing";
 import Support from "./pages/Support";
 import Notifications from "./pages/Notifications";
 import TelegramMiniApp from "./pages/TelegramMiniApp";
+import Guide from "./pages/Guide";
 import { Package, Images, Users } from "lucide-react";
 
 const navigation = [
@@ -56,10 +58,12 @@ const navigation = [
   { key: "executions", icon: Workflow },
   { key: "activity", icon: Activity },
   { key: "support", icon: LifeBuoy },
+  { key: "guide", icon: BookOpen },
   { key: "settings", icon: SettingsIcon },
 ];
 export default function App() {
   if (location.pathname === "/telegram-mini-app") return <TelegramMiniApp />;
+  if (location.pathname === "/guide") return <Guide publicPage />;
   return <PanelApp />;
 }
 
@@ -146,6 +150,9 @@ function PanelApp() {
       break;
     case "notifications":
       content = <Notifications user={user} />;
+      break;
+    case "guide":
+      content = <Guide />;
       break;
     case "settings":
       content = <Settings user={user} />;

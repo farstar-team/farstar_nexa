@@ -21,6 +21,7 @@ export const fa: Record<string, string> = {
   settings: "تنظیمات",
   support: "پشتیبانی",
   notifications: "اعلان‌ها",
+  guide: "راهنما",
   messageCenter: "ارسال پیام",
   messageCenterSub: "ارسال اطلاع‌رسانی به کاربر از کانال دلخواه.",
   messageCenterHint: "پیام داخل پنل فوری ثبت می‌شود؛ ایمیل و تلگرام از صف امن worker ارسال می‌شوند.",
