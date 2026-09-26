@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.3] - 2026-09-26
+
+- Replaced the remaining user-facing Flow wording with clear Persian automation wording.
+
 ## [0.5.2] - 2026-09-26
 
 - Redirected the removed `/guide` URL to the root page at the Caddy layer.

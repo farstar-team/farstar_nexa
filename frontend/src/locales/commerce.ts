@@ -81,7 +81,7 @@ export const commerceFa: Record<string, string> = {
   execution_interrupted_manual_review:
     "اجرا قطع شده و به بررسی دستی نیاز دارد.",
   media_account_mismatch: "مدیا متعلق به حساب انتخاب‌شده نیست.",
-  invalid_flow_account: "Flow یا حساب انتخاب‌شده معتبر نیست.",
+  invalid_flow_account: "اتوماسیون یا حساب انتخاب‌شده معتبر نیست.",
   unknown_template_variable: "متغیر قالب شناخته‌شده نیست.",
   comment_timestamp_unavailable: "زمان اصلی کامنت از Meta دریافت نشد.",
   healthy: "سالم",
