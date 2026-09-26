@@ -21,12 +21,13 @@ const faqs = [
 
 function DemoWindow() {
   const [active, setActive] = useState(0);
+  const host = window.location.host;
   useEffect(() => {
     const timer = window.setInterval(() => setActive((value) => (value + 1) % steps.length), 3600);
     return () => window.clearInterval(timer);
   }, []);
   return <div className="guide-demo" aria-label="نمایش تصویری مراحل استفاده">
-    <div className="demo-toolbar"><span className="demo-dot red" /><span className="demo-dot yellow" /><span className="demo-dot green" /><span className="demo-address">nexa.farstar.top / {active === 0 ? "integrations" : active === 1 ? "products" : active === 2 ? "automations" : "inbox"}</span></div>
+    <div className="demo-toolbar"><span className="demo-dot red" /><span className="demo-dot yellow" /><span className="demo-dot green" /><span className="demo-address">{host} / {active === 0 ? "integrations" : active === 1 ? "products" : active === 2 ? "automations" : "inbox"}</span></div>
     <div className="demo-body"><aside><div className="demo-logo"><img src={brand.mark} alt="" /> NEXA</div>{["داشبورد", "صندوق پیام‌ها", "محصولات", "اتوماسیون‌ها"].map((item, index) => <div className={`demo-nav ${active === index ? "active" : ""}`} key={item}><span>{index === 0 ? <BookOpen size={13} /> : index === 1 ? <Inbox size={13} /> : index === 2 ? <Zap size={13} /> : <Workflow size={13} />}</span>{item}</div>)}</aside><div className="demo-content"><div className="demo-heading"><span className="demo-eyebrow">NEXA / آموزش سریع</span><b>{steps[active].title}</b></div><div className="demo-card"><div className="demo-card-icon"><MousePointer2 size={20} /></div><div><strong>{steps[active].title}</strong><p>{steps[active].text}</p><div className="demo-progress"><i style={{ width: `${((active + 1) / steps.length) * 100}%` }} /></div></div></div><div className="demo-lines"><span /><span /><span /></div><div className="demo-cursor"><MousePointer2 size={28} /></div></div></div>
     <div className="demo-caption"><Play size={14} /> {steps[active].text}</div>
   </div>;

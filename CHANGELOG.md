@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.5] - 2026-09-26
+
+- Removed the temporary test domain from the illustrated guide and render the current host dynamically.
+
 ## [0.4.4] - 2026-09-26
 
 - Added a public illustrated usage guide at `/guide` with an animated desktop walkthrough.
