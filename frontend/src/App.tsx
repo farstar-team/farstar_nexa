@@ -44,6 +44,7 @@ import Support from "./pages/Support";
 import Notifications from "./pages/Notifications";
 import TelegramMiniApp from "./pages/TelegramMiniApp";
 import Guide from "./pages/Guide";
+import PageGuide from "./pages/PageGuide";
 import { Package, Images, Users } from "lucide-react";
 
 const navigation = [
@@ -307,6 +308,7 @@ function PanelApp() {
             <div className="notice error">{t("connectionFailed")}</div>
           )}
           {content}
+          {page !== "guide" && <PageGuide page={page} />}
         </main>
         <footer className="main-footer">
           <span>{brand.nameFa}</span>

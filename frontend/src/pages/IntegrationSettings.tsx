@@ -10,12 +10,7 @@ const names = [
   "telegram_bot_token",
   "telegram_bot_username",
   "telegram_webhook_secret",
-  "smtp_host",
-  "smtp_port",
-  "smtp_username",
-  "smtp_password",
-  "smtp_from",
-  "smtp_security",
+  "telegram_channel_username",
 ];
 export default function IntegrationSettings() {
   const query = useQuery({
@@ -90,16 +85,6 @@ export default function IntegrationSettings() {
             autoComplete="current-password"
           />
         </Field>
-      </Form>
-      <div className="card-divider" />
-      <p className="notice">{t("emailConfigHint")}</p>
-      <Form label="sendTestEmail" submit={async (data) => {
-        await api("/admin/email/test", "POST", { to: data.get("to"), password: data.get("password") });
-      }}>
-        <div className="form-grid">
-          <Field label="testRecipient"><input name="to" type="email" required dir="ltr" /></Field>
-          <Field label="reenterPassword"><input name="password" type="password" required dir="ltr" autoComplete="current-password" /></Field>
-        </div>
       </Form>
       <div className="card-divider" />
       <Form

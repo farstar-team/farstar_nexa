@@ -12,6 +12,7 @@ FIELDS = {
     "telegram_bot_token",
     "telegram_bot_username",
     "telegram_webhook_secret",
+    "telegram_channel_username",
     "smtp_host",
     "smtp_port",
     "smtp_username",

@@ -80,6 +80,10 @@
   max-height: 150px;
   overflow: auto;
 }
+.product-media-picker { margin-block: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.product-media-picker .section-heading { align-items: flex-start; margin-bottom: 12px; }
+.product-media-picker h3 { margin: 0 0 5px; }.product-media-picker p { margin: 0; color: var(--muted); font-size: .8rem; }
+.product-media-list { display: grid; gap: 8px; max-height: 220px; overflow: auto; margin-top: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 .pagination,
 .wizard-steps {
   display: flex;
@@ -102,6 +106,18 @@
 .flow-editor .field {
   margin-block: 12px;
 }
+.automation-start {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-block: 16px;
+  padding: 16px;
+  background: linear-gradient(120deg, var(--surface), var(--soft));
+}
+.automation-start h3 { margin: 5px 0; }
+.automation-start p { margin: 0; color: var(--muted); font-size: .82rem; }
+.automation-presets { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 .variable-list {
   display: flex;
   gap: 6px;
@@ -174,6 +190,10 @@
   border-inline-start: 3px solid var(--accent);
   padding-inline-start: 14px;
 }
+.email-settings { max-width: 980px; }
+.email-settings .section-heading svg { color: var(--accent); }
+.email-sender-preview { display: inline-flex; align-items: center; gap: 10px; padding: 13px 16px; margin: 12px 0 18px; border: 1px solid #9bc4a8; border-radius: 12px; background: var(--soft); color: var(--accent); }
+.email-sender-preview div { display: grid; gap: 3px; }.email-sender-preview small { color: var(--muted); }.email-sender-preview strong { color: var(--text); font-size: 1rem; }
 .execution-detail {
   display: grid;
   gap: 12px;
@@ -219,4 +239,7 @@ details summary {
   .price-preview {
     padding: 14px;
   }
+  .automation-start { align-items: stretch; flex-direction: column; }
+  .automation-presets { justify-content: stretch; }
+  .automation-presets button { flex: 1 1 100%; }
 }

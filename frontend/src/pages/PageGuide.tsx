@@ -1,0 +1,36 @@
+import { useEffect, useState } from "react";
+import { ArrowLeft, BookOpen, CheckCircle2, MousePointer2 } from "lucide-react";
+
+type GuideStep = { title: string; text: string };
+
+const guides: Record<string, { title: string; intro: string; steps: GuideStep[] }> = {
+  dashboard: { title: "داشبورد", intro: "نمای کلی فروش اجتماعی را سریع بخوانید و قدم بعدی را انتخاب کنید.", steps: [{ title: "وضعیت را ببینید", text: "اتصال‌ها، پیام‌های جدید و اجرای ناموفق را مرور کنید." }, { title: "عدد مهم را انتخاب کنید", text: "روی شاخصی که نیاز به پیگیری دارد تمرکز کنید." }, { title: "به بخش مربوط بروید", text: "با یک کلیک به Inbox، محصول یا اجرای مربوط بروید." }] },
+  inbox: { title: "صندوق پیام‌ها", intro: "گفت‌وگو را پیدا کنید، پاسخ را بخوانید و وضعیت ارسال را کنترل کنید.", steps: [{ title: "گفت‌وگو را انتخاب کنید", text: "از فهرست، مخاطب و زمان آخرین پیام را ببینید." }, { title: "پیام‌ها را بررسی کنید", text: "پیام ورودی و پاسخ خروجی با زمان و وضعیت جدا نمایش داده می‌شوند." }, { title: "ارسال ناموفق را پیگیری کنید", text: "وضعیت failed یا unknown را برای بررسی دستی پیدا کنید." }] },
+  automations: { title: "اتوماسیون‌ها", intro: "یک پاسخ قابل کنترل بسازید و قبل از فعال‌سازی آن را آزمایش کنید.", steps: [{ title: "محرک را انتخاب کنید", text: "کامنت پست یا ریلز، یا پیام دارای کلیدواژه را تعیین کنید." }, { title: "شرط و Flow را بسازید", text: "محصول، متغیرهای پیام و اقدام‌های لازم را انتخاب کنید." }, { title: "Dry Run بگیرید", text: "نتیجه را ببینید و فقط پس از اطمینان، اتوماسیون را فعال کنید." }] },
+  products: { title: "محصولات", intro: "محصول و روش قیمت‌گذاری را یک‌بار تنظیم کنید تا در پاسخ‌ها استفاده شود.", steps: [{ title: "محصول را بسازید", text: "نام، موجودی، SKU و توضیحات را ثبت کنید." }, { title: "روش قیمت را تعیین کنید", text: "قیمت مستقیم یا نرخ TGJU همراه با سود و کارمزد را انتخاب کنید." }, { title: "پست و ریلز را وصل کنید", text: "محتوای Instagram مرتبط را به همین محصول متصل کنید." }] },
+  media: { title: "مدیا", intro: "پست‌ها و ریلزها را همگام کنید و به محصول مناسب وصل کنید.", steps: [{ title: "حساب را انتخاب کنید", text: "حساب Instagram فعال را انتخاب کنید." }, { title: "دریافت مدیا را بزنید", text: "پست‌ها و ریلزهای جدید از Instagram همگام می‌شوند." }, { title: "مدیا را به محصول وصل کنید", text: "چند محتوا را انتخاب و محصول مقصد را تعیین کنید." }] },
+  leads: { title: "سرنخ‌ها", intro: "مخاطب‌های علاقه‌مند را دسته‌بندی و برای پیگیری آماده کنید.", steps: [{ title: "سرنخ را پیدا کنید", text: "منبع، آخرین تعامل و نام مخاطب را ببینید." }, { title: "برچسب بزنید", text: "دسته‌ای مثل داغ، پیگیری یا خرید را ثبت کنید." }, { title: "یادداشت بگذارید", text: "نکته بعدی برای پیگیری را کنار سابقه مخاطب نگه دارید." }] },
+  integrations: { title: "اتصال‌ها", intro: "اتصال‌های رسمی را برقرار کنید تا پیام و مدیا وارد Nexa شوند.", steps: [{ title: "سرویس را انتخاب کنید", text: "Instagram یا اتصال مورد نیاز را باز کنید." }, { title: "مجوز را تأیید کنید", text: "Callback و دسترسی‌ها از دامنه مرکزی سیستم استفاده می‌کنند." }, { title: "وضعیت را بررسی کنید", text: "حساب متصل باید فعال و آماده دریافت رویداد باشد." }] },
+  telegram: { title: "تلگرام", intro: "ربات، Mini App و قفل عضویت کانال را از یک مسیر روشن مدیریت کنید.", steps: [{ title: "ربات را پیکربندی کنید", text: "توکن و Webhook را فقط در تنظیمات امن مدیر ثبت کنید." }, { title: "حساب را پیوند دهید", text: "از لینک اتصال، حساب تلگرام را به پنل وصل کنید." }, { title: "عضویت کانال را کنترل کنید", text: "اگر قفل فعال باشد، کاربر پیش از استفاده باید عضو کانال باشد." }] },
+  executions: { title: "اجراها", intro: "هر اجرای اتوماسیون را با نتیجه و جزئیات فنی دنبال کنید.", steps: [{ title: "اجرا را باز کنید", text: "محرک، محصول و مدیای مرتبط را ببینید." }, { title: "وضعیت را بخوانید", text: "complete، failed، waiting و unknown مسیر اجرا را نشان می‌دهند." }, { title: "اقدام بعدی را انجام دهید", text: "برای خطای ارسال یا بررسی دستی تصمیم بگیرید." }] },
+  activity: { title: "فعالیت‌ها", intro: "رویدادهای مهم پنل را به زبان ساده و قابل پیگیری ببینید.", steps: [{ title: "رویداد را پیدا کنید", text: "آخرین اتصال، تغییر و اجرای مهم را مرور کنید." }, { title: "زمان را بررسی کنید", text: "هر فعالیت با زمان محلی حساب نمایش داده می‌شود." }, { title: "پیگیری کنید", text: "برای جزئیات بیشتر به بخش مرتبط برگردید." }] },
+  support: { title: "پشتیبانی", intro: "تیکت یا گفت‌وگوی آنلاین را بسازید و پاسخ را در همان رشته دنبال کنید.", steps: [{ title: "موضوع را بنویسید", text: "مسئله را کوتاه و روشن ثبت کنید." }, { title: "پیام را ادامه دهید", text: "پاسخ تیم در همان گفت‌وگو ذخیره می‌شود." }, { title: "وضعیت را ببینید", text: "باز، در حال بررسی و بسته وضعیت پیگیری را مشخص می‌کنند." }] },
+  notifications: { title: "اعلان‌ها", intro: "پیام‌های سیستمی و اطلاع‌رسانی‌های مهم را از یک صندوق بخوانید.", steps: [{ title: "اعلان را باز کنید", text: "عنوان و متن کامل پیام را بخوانید." }, { title: "کانال را تشخیص دهید", text: "اعلان پنل، ایمیل یا تلگرام وضعیت جدا دارد." }, { title: "پیگیری را انجام دهید", text: "در صورت نیاز به بخش مربوط در پنل بروید." }] },
+  settings: { title: "تنظیمات", intro: "حساب، منطقه زمانی، ظاهر و تنظیمات شخصی را مدیریت کنید.", steps: [{ title: "اطلاعات حساب را ببینید", text: "نام کاربری و ایمیل فعلی را بررسی کنید." }, { title: "ظاهر را انتخاب کنید", text: "حالت روشن یا تاریک برای همین دستگاه ذخیره می‌شود." }, { title: "امنیت را رعایت کنید", text: "از خروج امن و رمز قوی استفاده کنید." }] },
+  admin: { title: "مدیریت", intro: "تنظیمات سیستم، کاربران، ایمیل و پیام‌های عمومی را کنترل کنید.", steps: [{ title: "بخش مدیر را انتخاب کنید", text: "سیستم، کاربران، ایمیل یا پیام‌ها را باز کنید." }, { title: "تغییر را بازبینی کنید", text: "قبل از عملیات حساس، دامنه و مخاطب را دوباره بررسی کنید." }, { title: "نتیجه را پیگیری کنید", text: "وضعیت عملیات و گزارش Audit ثبت می‌شود." }] },
+};
+
+export default function PageGuide({ page }: { page: string }) {
+  const guide = guides[page] ?? guides.dashboard;
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setActive((value) => (value + 1) % guide.steps.length), 4200);
+    return () => window.clearInterval(timer);
+  }, [guide]);
+  const step = guide.steps[active];
+  return <section className="page-guide" aria-label={`راهنمای استفاده از ${guide.title}`}>
+    <div className="page-guide-heading"><div><span className="eyebrow"><BookOpen size={14} /> راهنمای استفاده</span><h2>{guide.title}</h2><p>{guide.intro}</p></div><a className="text-button" href="/guide">راهنمای کامل <ArrowLeft size={14} /></a></div>
+    <div className="page-guide-window"><div className="page-guide-toolbar"><span /><span /><span /><b>{guide.title}</b></div><div className="page-guide-body"><div className="page-guide-sidebar"><i /><i className="active" /><i /><i /><i /></div><div className="page-guide-main"><small>مرحله {active + 1} از {guide.steps.length}</small><strong>{step.title}</strong><p>{step.text}</p><div className="page-guide-progress"><i style={{ width: `${((active + 1) / guide.steps.length) * 100}%` }} /></div><MousePointer2 className="page-guide-cursor" size={24} /></div></div></div>
+    <div className="page-guide-steps">{guide.steps.map((item, index) => <button type="button" className={index === active ? "active" : ""} onClick={() => setActive(index)} key={item.title}><CheckCircle2 size={16} /><span>{item.title}</span></button>)}</div>
+  </section>;
+}

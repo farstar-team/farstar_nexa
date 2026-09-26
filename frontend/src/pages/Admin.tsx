@@ -8,6 +8,7 @@ import {
   Download,
   Globe2,
   MessageCircle,
+  Mail,
   RefreshCw,
   Server,
   Shield,
@@ -27,6 +28,7 @@ import {
 } from "../components";
 import { date, number, t } from "../i18n";
 import IntegrationSettings from "./IntegrationSettings";
+import EmailSettings from "./EmailSettings";
 import ContentEditor from "./ContentEditor";
 import MessageCenter from "./MessageCenter";
 
@@ -61,6 +63,7 @@ const tabs = [
   { key: "audit", icon: Shield },
   { key: "content", icon: Globe2 },
   { key: "messages", icon: MessageCircle },
+  { key: "email", icon: Mail },
 ];
 
 export default function Admin({ user }: { user: User }) {
@@ -470,6 +473,7 @@ export default function Admin({ user }: { user: User }) {
       )}
       {owner && tab === "content" && <ContentEditor />}
       {owner && tab === "messages" && <MessageCenter currentUser={user} />}
+      {owner && tab === "email" && <EmailSettings />}
       {owner && tab === "system" && <IntegrationSettings />}
       {owner && !!operations.data?.length && (
         <section className="card operation-history">

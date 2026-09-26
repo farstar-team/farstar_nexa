@@ -7,6 +7,7 @@ export const fa: Record<string, string> = {
   telegram_bot_token: "توکن ربات تلگرام",
   telegram_bot_username: "نام کاربری ربات (بدون @)",
   telegram_webhook_secret: "رمز وب‌هوک تلگرام (حداقل ۳۲ نویسه)",
+  telegram_channel_username: "نام کاربری کانال قفل‌شده (بدون @)",
   configureTelegramWebhook: "ثبت وب‌هوک تلگرام",
   telegram_configuration_failed:
     "ثبت وب‌هوک انجام نشد. دامنه HTTPS، توکن و نام کاربری ربات را بررسی کنید.",
@@ -144,6 +145,7 @@ export const fa: Record<string, string> = {
   telegram_not_linked: "این حساب تلگرام هنوز به پنل نکسا متصل نشده است.",
   email_not_configured: "تنظیمات ایمیل هنوز کامل نشده است.",
   email_delivery_failed: "ارسال ایمیل انجام نشد.",
+  email_local_part_invalid: "نام قبل از @ باید با حروف انگلیسی، عدد، نقطه، خط تیره یا زیرخط باشد.",
   ticket_closed: "این تیکت بسته شده است.",
   telegramFeatures:
     "مشاهده حساب‌ها، تغییر وضعیت اتوماسیون‌ها و آمار اجرا، مستقیم از ربات فارسی نکسا.",

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import type { Account } from "../api";
 import {
   Badge,
   Confirm,
@@ -13,7 +14,7 @@ import {
   PageTitle,
 } from "../components";
 import { currencies } from "../commerce";
-import type { Price, Product } from "../commerce";
+import type { Media, Price, Product } from "../commerce";
 import { date, t } from "../i18n";
 
 export function PricePreview({ price }: { price: Price }) {
@@ -136,6 +137,18 @@ export function ProductEditor({
   const [price, setPrice] = useState<Price>();
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
+  const [mediaAccount, setMediaAccount] = useState("");
+  const [mediaIds, setMediaIds] = useState<string[]>([]);
+  const accounts = useQuery({
+    queryKey: ["accounts"],
+    queryFn: () => api<Account[]>("/accounts"),
+  });
+  const accountId = mediaAccount || accounts.data?.find((a) => a.active)?.id || "";
+  const media = useQuery({
+    queryKey: ["product-editor-media", accountId],
+    queryFn: () => api<Media[]>("/media?account_id=" + encodeURIComponent(accountId)),
+    enabled: !!accountId,
+  });
   const choices = (
     name: string,
     label: string,
@@ -156,11 +169,14 @@ export function ProductEditor({
     <Form
       label="save"
       submit={async (data) => {
-        await api(
+        const saved = await api<Product>(
           product ? "/products/" + product.id : "/products",
           product ? "PUT" : "POST",
           productPayload(data),
         );
+        if (mediaIds.length) {
+          await api("/media/product", "PUT", { media_ids: mediaIds, product_id: saved.id });
+        }
         done();
       }}
     >
@@ -240,8 +256,6 @@ export function ProductEditor({
         <Field label="منبع نرخ ارز">
           <select name="rate_source" defaultValue={product?.pricing.rate_source ?? "tgju_sana"}>
             <option value="tgju_sana">TGJU Sana (رسمی)</option>
-            <option value="bonbast">Bonbast (بازار آزاد؛ نیازمند حساب تجاری)</option>
-            <option value="open_er_api">منبع مرجع بین‌المللی</option>
           </select>
         </Field>
         <Field label="نرخ دستی (یک واحد ارز پایه)">
@@ -368,6 +382,18 @@ export function ProductEditor({
             .join("\n")}
         />
       </Field>
+      <section className="product-media-picker">
+        <div className="section-heading"><div><h3>اتصال پست و ریلز</h3><p>محتوای مرتبط را همین‌جا به محصول وصل کنید؛ برای دریافت فهرست تازه، از بخش مدیا همگام‌سازی کنید.</p></div></div>
+        <Field label="حساب Instagram">
+          <select value={accountId} onChange={(e) => { setMediaAccount(e.target.value); setMediaIds([]); }}>
+            <option value="">انتخاب حساب</option>
+            {accounts.data?.filter((a) => a.active).map((a) => <option value={a.id} key={a.id}>{a.name}</option>)}
+          </select>
+        </Field>
+        {accountId && media.isPending && <Loading />}
+        {accountId && media.data?.length === 0 && <p className="notice">برای این حساب هنوز پست یا ریلزی همگام نشده است.</p>}
+        {!!media.data?.length && <div className="product-media-list">{media.data.map((item) => <label className="media-choice" key={item.id}><input type="checkbox" checked={mediaIds.includes(item.id)} onChange={(e) => setMediaIds(e.target.checked ? [...mediaIds, item.id] : mediaIds.filter((id) => id !== item.id))} /><span><b>{item.media_type === "REELS" ? "ریلز" : "پست"}</b> · {item.caption || item.external_id}</span></label>)}</div>}
+      </section>
       <button
         type="button"
         className="secondary"
@@ -395,7 +421,7 @@ export function ProductEditor({
       >
         محاسبه و پیش‌نمایش قیمت
       </button>
-      <ErrorNotice error={error} />
+      <ErrorNotice error={error ?? accounts.error ?? media.error} />
       {price && <PricePreview price={price} />}
     </Form>
   );

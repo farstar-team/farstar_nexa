@@ -29,8 +29,11 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_bot_username: str = ""
     telegram_webhook_secret: str = ""
-    exchange_provider: str = "open_er_api"
+    telegram_channel_username: str = ""
+    exchange_provider: str = "tgju_sana"
     exchange_cache_ttl: int = 86400
+    # Legacy provider fields remain accepted for old test fixtures and saved
+    # settings, but are no longer selectable in the product UI.
     bonbast_api_url: str = "https://www.bonbast.com/api"
     bonbast_username: str = ""
     bonbast_hash: str = ""

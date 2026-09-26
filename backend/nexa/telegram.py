@@ -22,6 +22,8 @@ TEXT = {
     "yes": "تأیید",
     "back": "بازگشت",
     "updated": "وضعیت اتوماسیون به‌روز شد.",
+    "channel_required": "برای استفاده از ربات ابتدا عضو کانال رسمی شوید.",
+    "channel_check": "عضویت در کانال بررسی شد.",
 }
 
 
@@ -43,6 +45,28 @@ def menu():
     return [[{"text": TEXT[key], "callback_data": key}] for key in ("accounts", "automations", "stats")] + [
         [{"text": "🚀 مینی‌اپ نکسا", "web_app": {"url": integration_settings().base_url + "/telegram-mini-app"}}],
         [{"text": TEXT["panel"], "url": integration_settings().base_url}],
+    ]
+
+
+def channel_is_member(telegram_id: str) -> bool:
+    username = integration_settings().telegram_channel_username.strip()
+    if not username:
+        return True
+    chat_id = username if username.startswith("@") or username.startswith("-") else "@" + username
+    try:
+        member = bot_call("getChatMember", {"chat_id": chat_id, "user_id": telegram_id})
+    except RuntimeError:
+        return False
+    return member.get("status") in {"creator", "administrator", "member"} or (
+        member.get("status") == "restricted" and member.get("is_member") is True
+    )
+
+
+def channel_keyboard():
+    username = integration_settings().telegram_channel_username.strip().lstrip("@")
+    return [
+        [{"text": "عضویت در کانال", "url": "https://t.me/" + username}],
+        [{"text": "بررسی عضویت", "callback_data": "channel:check"}],
     ]
 
 
@@ -105,9 +129,16 @@ def handle_update(db: Session, data: dict):
     user = db.get(User, link.user_id) if link else None
     if not user or not user.active:
         reply, keyboard = TEXT["unlinked"], []
+    elif integration_settings().telegram_channel_username and not channel_is_member(telegram_id):
+        reply, keyboard = TEXT["channel_required"], channel_keyboard()
+        if callback:
+            bot_call("answerCallbackQuery", {"callback_query_id": callback["id"]})
     elif callback:
         ws = workspace(db, user)
         action = callback.get("data", "")
+        if action == "channel:check":
+            reply = TEXT["channel_check"] if channel_is_member(telegram_id) else TEXT["channel_required"]
+            keyboard = menu() if channel_is_member(telegram_id) else channel_keyboard()
         if action == "accounts":
             reply = (
                 "\n".join(

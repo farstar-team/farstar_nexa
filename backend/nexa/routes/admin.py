@@ -3,6 +3,7 @@ import secrets
 import time
 import uuid
 from typing import Literal
+from urllib.parse import urlsplit
 
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -45,9 +46,14 @@ class IntegrationInput(BaseModel):
 @router.get("/integrations")
 def integration_config(user: User = Depends(require("system.manage"))):
     config = integration_settings()
+    sender = config.smtp_from.strip()
+    sender_local, sender_domain = (sender.rsplit("@", 1) if "@" in sender else ("", ""))
+    base_domain = urlsplit(config.base_url).hostname or ""
     return {
         **{key: bool(getattr(config, key)) for key in sorted(FIELDS)},
         "public_urls": config.public_urls,
+        "email_domain": sender_domain or base_domain,
+        "email_local_part": sender_local,
     }
 
 
@@ -71,6 +77,8 @@ def save_integrations(
         if key == "telegram_webhook_secret" and not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", value):
             raise HTTPException(422, "validation_error")
         if key == "telegram_bot_username" and not re.fullmatch(r"[A-Za-z0-9_]{5,32}", value):
+            raise HTTPException(422, "validation_error")
+        if key == "telegram_channel_username" and value and not re.fullmatch(r"@?[A-Za-z0-9_]{5,64}", value):
             raise HTTPException(422, "validation_error")
         if key == "smtp_port":
             try:
@@ -159,7 +167,7 @@ def save_content(
 
 
 class AdminMessage(BaseModel):
-    user_id: str
+    user_id: str | None = None
     title: str = Field(min_length=1, max_length=160)
     body: str = Field(min_length=1, max_length=5000)
     channels: list[Literal["panel", "email", "telegram"]] = Field(min_length=1, max_length=3)
@@ -171,31 +179,36 @@ def send_admin_message(
     user: User = Depends(require("system.manage")),
     db: Session = Depends(get_db),
 ):
-    target = db.get(User, data.user_id)
-    if not target or not target.active:
-        raise HTTPException(404, "not_found")
+    if data.user_id == "*":
+        targets = list(db.scalars(select(User).where(User.active.is_(True), User.id != user.id)))
+    else:
+        target = db.get(User, data.user_id or "")
+        if not target or not target.active:
+            raise HTTPException(404, "not_found")
+        targets = [target]
     channels = list(dict.fromkeys(data.channels))
-    for channel in channels:
-        notification = Notification(
-            user_id=target.id,
-            title=data.title.strip(),
-            body=data.body.strip(),
-            channel=channel,
-            status="sent" if channel == "panel" else "queued",
-        )
-        db.add(notification)
-        db.flush()
-        if channel in {"email", "telegram"}:
-            db.add(
-                Job(
-                    key=f"notification:{notification.id}",
-                    kind="notification_" + channel,
-                    payload={"notification_id": notification.id},
-                )
+    for target in targets:
+        for channel in channels:
+            notification = Notification(
+                user_id=target.id,
+                title=data.title.strip(),
+                body=data.body.strip(),
+                channel=channel,
+                status="sent" if channel == "panel" else "queued",
             )
-    audit(db, user.id, "notification.sent", target.id, channels=channels)
+            db.add(notification)
+            db.flush()
+            if channel in {"email", "telegram"}:
+                db.add(
+                    Job(
+                        key=f"notification:{notification.id}",
+                        kind="notification_" + channel,
+                        payload={"notification_id": notification.id},
+                    )
+                )
+    audit(db, user.id, "notification.broadcast" if data.user_id == "*" else "notification.sent", data.user_id or "", channels=channels, recipients=len(targets))
     db.commit()
-    return {"ok": True, "channels": channels}
+    return {"ok": True, "channels": channels, "recipients": len(targets)}
 
 
 @router.post("/telegram-webhook")

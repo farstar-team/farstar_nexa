@@ -129,14 +129,14 @@ class RateInput(StrictInput):
 @router.get("/exchange-rates")
 def rates(user: User = Depends(current_user), db: Session = Depends(get_db)):
     rows = db.scalars(select(WorkspaceRate).where(WorkspaceRate.workspace_id == workspace(db, user).id))
-    active = settings().exchange_provider
+    active = settings().exchange_provider if settings().exchange_provider in PROVIDERS else "tgju_sana"
     return {
         "manual": [serialize(row, "id base_currency quote_currency rate updated_at") for row in rows],
         "provider": PROVIDERS.get(active, PROVIDERS["tgju_sana"]).health(),
         "active_provider": active,
-        "supported_providers": ["tgju_sana", "bonbast", "open_er_api"],
+        "supported_providers": ["tgju_sana"],
         "attribution_url": "https://www.tgju.org/sanarate-service",
-        "attribution": "نرخ رسمی Sana از سرویس TGJU؛ برای نرخ بازار آزاد، منبع Bonbast نیازمند حساب تجاری است.",
+        "attribution": "نرخ فروش ارز سنا از سرویس رسمی TGJU.",
     }
 
 

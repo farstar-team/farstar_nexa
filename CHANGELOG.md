@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0] - 2026-09-26
+
+- Redesigned the public guide hero with a new Farstar Nexa logo and clearer Persian copy.
+- Added page-specific animated usage guides to every authenticated panel page.
+- Added quick automation presets for price replies and direct messages.
+- Added post and Reel selection while creating or editing a product.
+- Switched the active currency feed to TGJU Sana sell rates and removed alternate providers from the UI.
+- Added a separate admin email settings page with generated sender addresses and test delivery.
+- Added broadcast notifications for active users across panel, email and Telegram channels.
+- Added optional Telegram channel membership locking for bot access.
+- Improved all collapsible sections with consistent visual controls.
+
 ## [0.4.5] - 2026-09-26
 
 - Removed the temporary test domain from the illustrated guide and render the current host dynamically.

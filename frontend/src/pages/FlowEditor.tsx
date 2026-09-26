@@ -67,6 +67,17 @@ export default function FlowEditor({
       textarea?.setSelectionRange(caret, caret);
     });
   }
+  function applyPreset(preset: "price" | "message") {
+    setTrigger(preset === "price" ? "instagram.comment" : "message.keyword");
+    setScope(preset === "price" ? "PRODUCT_MEDIA" : "ANY_CONNECTED_MEDIA");
+    setMode("contains");
+    setKeywords(preset === "price" ? "قیمت، هزینه" : "سلام، موجودی، سفارش");
+    setActions([
+      { ...newAction("CREATE_OR_UPDATE_LEAD") },
+      { ...newAction(preset === "price" ? "SEND_PRICE" : "SEND_PRODUCT") },
+    ]);
+    setStep(1);
+  }
   async function save() {
     setBusy(true);
     setError(undefined);
@@ -113,6 +124,13 @@ export default function FlowEditor({
           </button>
         ))}
       </div>
+      <section className="automation-start card">
+        <div><span className="eyebrow">شروع سریع</span><h3>از یک الگوی آماده شروع کنید</h3><p>فقط محصول و حساب را انتخاب کنید؛ شرط‌ها و اقدام‌های رایج از قبل آماده می‌شوند.</p></div>
+        <div className="automation-presets">
+          <button type="button" className="secondary" onClick={() => applyPreset("price")}>پاسخ قیمت روی پست و ریلز</button>
+          <button type="button" className="secondary" onClick={() => applyPreset("message")}>پاسخ به دایرکت</button>
+        </div>
+      </section>
       <ErrorNotice error={error ?? products.error ?? media.error} />
       {step === 1 && (
         <>

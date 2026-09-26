@@ -43,9 +43,7 @@ export const commerceFa: Record<string, string> = {
   manual: "دستی",
   sample: "نمونه",
   fixed_conversion: "تبدیل ثابت واحد",
-  open_er_api: "نرخ مرجع روزانه",
   tgju_sana: "نرخ رسمی Sana از TGJU",
-  bonbast: "نرخ بازار آزاد Bonbast",
   direct_price: "قیمت مستقیم فروشنده",
   manual_fallback: "نرخ دستی جایگزین",
   exchange_rate_unavailable:
