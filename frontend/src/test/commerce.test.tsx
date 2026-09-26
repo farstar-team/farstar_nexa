@@ -173,10 +173,10 @@ describe("commerce user workflows", () => {
     const done = vi.fn();
     const { user, calls } = setup(<ProductEditor product={null} done={done} />);
     await user.type(screen.getByLabelText("نام محصول"), "تور دبی");
-    await user.type(screen.getByLabelText("شناسه محصول (slug)"), "dubai");
+    await user.type(screen.getByLabelText("شناسه محصول"), "dubai");
     await user.type(screen.getByLabelText("قیمت پایه"), "250.25");
     await user.type(
-      screen.getByLabelText("نرخ دستی (یک واحد ارز پایه)"),
+      screen.getByLabelText("نرخ دستی جایگزین"),
       "27000",
     );
     await user.click(screen.getByRole("button", { name: "ذخیره" }));
@@ -184,6 +184,22 @@ describe("commerce user workflows", () => {
     expect(calls.find((c) => c.method === "POST")!.body.base_price).toBe(
       "250.25",
     );
+  });
+  it("keeps direct pricing separate from currency conversion", async () => {
+    const done = vi.fn();
+    const { user, calls } = setup(<ProductEditor product={null} done={done} />);
+    await user.type(screen.getByLabelText("نام محصول"), "تور مستقیم");
+    await user.type(screen.getByLabelText("شناسه محصول"), "direct-tour");
+    await user.type(screen.getByLabelText("قیمت پایه"), "1200000");
+    await user.click(screen.getByRole("checkbox", { name: /قیمت مستقیم/ }));
+    expect(screen.getByLabelText("واحد قیمت مستقیم")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "ذخیره" }));
+    await waitFor(() => expect(done).toHaveBeenCalledOnce());
+    const body = calls.find((c) => c.method === "POST")!.body;
+    expect(body.pricing_mode).toBe("MANUAL");
+    expect(body.base_currency).toBe("TOMAN");
+    expect(body.output_currency).toBe("TOMAN");
+    expect((body.pricing as { direct_price: boolean }).direct_price).toBe(true);
   });
   it("opens an existing product editor", async () => {
     const { user, calls } = setup(<Products />);

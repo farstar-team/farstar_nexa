@@ -74,11 +74,13 @@ export function Field({
   children,
   hint,
   help,
+  required = false,
 }: {
   label: string;
   children: ReactNode;
   hint?: string;
   help?: string;
+  required?: boolean;
 }) {
   const fieldId = useId();
   const labeledChildren = Children.map(children, (child) =>
@@ -93,7 +95,7 @@ export function Field({
   );
   return (
     <div className="field">
-      <div className="field-label"><label htmlFor={fieldId}>{t(label)}</label>{help && <HelpTip text={help} />}</div>
+      <div className="field-label"><label htmlFor={fieldId}>{t(label)}</label>{required && <span className="field-required">الزامی</span>}{help && <HelpTip text={help} />}</div>
       {labeledChildren}
       {hint && <small>{t(hint)}</small>}
     </div>
@@ -188,10 +190,12 @@ export function Form({
   submit,
   children,
   label = "save",
+  className,
 }: {
   submit: (data: FormData) => Promise<unknown>;
   children: ReactNode;
   label?: string;
+  className?: string;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<unknown>();
@@ -212,7 +216,7 @@ export function Form({
     }
   }
   return (
-    <form onSubmit={onSubmit}>
+    <form className={className} onSubmit={onSubmit}>
       <ErrorNotice error={error} />
       {children}
       {success && (

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.4] - 2026-09-26
+
+- Simplified product pricing into mutually exclusive converted-price and direct-price modes.
+- Replaced the product SKU field with one required internal product identifier and clearer required markers.
+- Added a scrollable Instagram-style media picker with thumbnail cards and explicit confirmation.
+
 ## [0.5.3] - 2026-09-26
 
 - Replaced the remaining user-facing Flow wording with clear Persian automation wording.

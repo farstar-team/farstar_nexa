@@ -51,6 +51,7 @@ export function productPayload(data: FormData) {
   const value = (key: string) => String(data.get(key) ?? "");
   const directPrice = data.has("direct_price");
   const useLiveRate = data.has("use_live_rate");
+  const directCurrency = value("direct_currency") || value("base_currency") || "TOMAN";
   const adjustmentEnabled = data.has("adjustment_enabled");
   const timestamp = (key: string) =>
     value(key) ? new Date(value(key)).toISOString() : null;
@@ -62,8 +63,8 @@ export function productPayload(data: FormData) {
     status: value("status"),
     availability: value("availability"),
     base_price: value("base_price"),
-    base_currency: value("base_currency"),
-    output_currency: value("output_currency"),
+    base_currency: directPrice ? directCurrency : value("base_currency"),
+    output_currency: directPrice ? directCurrency : value("output_currency"),
     pricing_mode: directPrice
       ? "MANUAL"
       : useLiveRate
@@ -95,7 +96,7 @@ export function productPayload(data: FormData) {
       discount_value: value("discount_value") || "0",
       discount_start: timestamp("discount_start"),
       discount_end: timestamp("discount_end"),
-      fallback: value("fallback"),
+      fallback: value("fallback") || "STOP",
     },
   };
 }
@@ -137,8 +138,13 @@ export function ProductEditor({
   const [price, setPrice] = useState<Price>();
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
+  const [pricingMode, setPricingMode] = useState<"converted" | "direct">(
+    product?.pricing.direct_price ? "direct" : "converted",
+  );
   const [mediaAccount, setMediaAccount] = useState("");
   const [mediaIds, setMediaIds] = useState<string[]>([]);
+  const [mediaDraftIds, setMediaDraftIds] = useState<string[]>([]);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const accounts = useQuery({
     queryKey: ["accounts"],
     queryFn: () => api<Account[]>("/accounts"),
@@ -154,8 +160,9 @@ export function ProductEditor({
     label: string,
     values: string[],
     selected?: string,
+    required = false,
   ) => (
-    <Field label={label}>
+    <Field label={label} required={required}>
       <select name={name} defaultValue={selected ?? values[0]}>
         {values.map((v) => (
           <option key={v} value={v}>
@@ -167,6 +174,7 @@ export function ProductEditor({
   );
   return (
     <Form
+      className="product-editor"
       label="save"
       submit={async (data) => {
         const saved = await api<Product>(
@@ -180,8 +188,9 @@ export function ProductEditor({
         done();
       }}
     >
+      <input type="hidden" name="sku" value={product?.sku ?? ""} readOnly />
       <div className="form-grid">
-        <Field label="نام محصول">
+        <Field label="نام محصول" required>
           <input
             name="name"
             defaultValue={product?.name}
@@ -189,7 +198,11 @@ export function ProductEditor({
             maxLength={120}
           />
         </Field>
-        <Field label="شناسه محصول (slug)">
+        <Field
+          label="شناسه محصول"
+          required
+          hint="برای کنترل محصول در سیستم؛ فقط حروف انگلیسی، عدد، خط تیره یا زیرخط."
+        >
           <input
             name="slug"
             defaultValue={product?.slug}
@@ -208,9 +221,6 @@ export function ProductEditor({
         />
       </Field>
       <div className="form-grid">
-        <Field label="کد کالا (SKU)">
-          <input name="sku" defaultValue={product?.sku} maxLength={80} />
-        </Field>
         {choices("status", "وضعیت", ["ACTIVE", "INACTIVE"], product?.status)}
         {choices(
           "availability",
@@ -218,7 +228,7 @@ export function ProductEditor({
           ["IN_STOCK", "OUT_OF_STOCK", "LIMITED", "ON_REQUEST"],
           product?.availability,
         )}
-        <Field label="قیمت پایه">
+        <Field label="قیمت پایه" required hint="مبلغ را بدون جداکننده هزارگان وارد کنید.">
           <input
             name="base_price"
             type="number"
@@ -228,63 +238,81 @@ export function ProductEditor({
             defaultValue={product?.base_price}
           />
         </Field>
-        {choices(
-          "base_currency",
-          "ارز پایه",
-          currencies,
-          product?.base_currency,
-        )}
-        {choices(
-          "output_currency",
-          "ارز نمایش",
-          currencies,
-          product?.output_currency ?? "TOMAN",
-        )}
-        <Field label="کنترل نرخ و سود">
-          <label className="toggle-card">
+      </div>
+      <section className="pricing-mode-section" aria-labelledby="pricing-mode-title">
+        <div className="section-heading pricing-mode-heading">
+          <div>
+            <h3 id="pricing-mode-title">قیمت‌گذاری محصول</h3>
+            <p>فقط یکی از دو روش زیر را انتخاب کنید.</p>
+          </div>
+        </div>
+        <div className="pricing-mode-grid">
+          <label className={`pricing-mode-card ${pricingMode === "converted" ? "selected" : ""}`}>
             <input
               type="checkbox"
               name="use_live_rate"
-              defaultChecked={product?.pricing_mode !== "MANUAL"}
+              checked={pricingMode === "converted"}
+              onChange={() => setPricingMode("converted")}
             />
             <span>
-              <b>استفاده از نرخ ارز آنلاین</b>
-              <small>نرخ ایرانی انتخاب‌شده هنگام پیش‌نمایش و ارسال خوانده می‌شود.</small>
+              <b>قیمت با تبدیل ارز</b>
+              <small>قیمت بر اساس نرخ آزاد TGJU، سود یا کارمزد محاسبه می‌شود.</small>
             </span>
           </label>
-        </Field>
-        <Field label="منبع نرخ ارز">
-          <select name="rate_source" defaultValue={product?.pricing.rate_source ?? "tgju_sana"}>
-            <option value="tgju_sana">دلار آزاد TGJU (به ریال، تبدیل به تومان)</option>
-          </select>
-        </Field>
-        <Field label="نرخ دستی (یک واحد ارز پایه)">
-          <input
-            name="manual_rate"
-            type="number"
-            min="0.0000000001"
-            step="any"
-            defaultValue={product?.manual_rate ?? ""}
-          />
-        </Field>
-      </div>
-      <p className="notice">
-        منبع پیش‌فرض نرخ، صفحهٔ «دلار آزاد» TGJU است. TGJU عدد را به ریال
-        منتشر می‌کند و Nexa هنگام نمایش تومان، تبدیل ریال به تومان را انجام
-        می‌دهد. اگر نرخ در دسترس نبود، حالت دستی یا fallback را نگه دارید.
-      </p>
-      <label className="toggle-card">
-        <input
-          type="checkbox"
-          name="direct_price"
-          defaultChecked={Boolean(product?.pricing.direct_price)}
-        />
-        <span>
-          <b>قیمت مستقیم فروشنده</b>
-          <small>قیمت پایه همین قیمت نهایی است؛ تبدیل ارز و درصد سود/کارمزد اعمال نمی‌شود.</small>
-        </span>
-      </label>
-      <details className="pretty-details" open>
+          <label className={`pricing-mode-card ${pricingMode === "direct" ? "selected" : ""}`}>
+            <input
+              type="checkbox"
+              name="direct_price"
+              checked={pricingMode === "direct"}
+              onChange={() => setPricingMode("direct")}
+            />
+            <span>
+              <b>قیمت مستقیم</b>
+              <small>همان مبلغی که وارد می‌کنید به مشتری نمایش داده می‌شود.</small>
+            </span>
+          </label>
+        </div>
+      </section>
+      {pricingMode === "direct" ? (
+        <section className="pricing-settings-card">
+          <div className="section-heading">
+            <div>
+              <h3>تنظیم قیمت مستقیم</h3>
+              <p>تبدیل ارز و سود روی این محصول اعمال نمی‌شود.</p>
+            </div>
+          </div>
+          <Field label="واحد قیمت مستقیم" required hint="مثلاً تومان یا دلار؛ قیمت پایه با همین واحد نمایش داده می‌شود.">
+            <select name="direct_currency" defaultValue={product?.output_currency ?? product?.base_currency ?? "TOMAN"}>
+              {currencies.map((currency) => <option key={currency} value={currency}>{t(currency)}</option>)}
+            </select>
+          </Field>
+        </section>
+      ) : (
+        <section className="pricing-settings-card">
+          <div className="section-heading">
+            <div>
+              <h3>تنظیم تبدیل ارز</h3>
+              <p>ارز قیمت پایه را به ارز نمایش تبدیل می‌کنیم.</p>
+            </div>
+          </div>
+          <div className="form-grid">
+            {choices("base_currency", "ارز پایه", currencies, product?.base_currency, true)}
+            {choices("output_currency", "ارز نمایش", currencies, product?.output_currency ?? "TOMAN", true)}
+            <Field label="منبع نرخ">
+              <select name="rate_source" defaultValue={product?.pricing.rate_source ?? "tgju_sana"}>
+                <option value="tgju_sana">دلار آزاد TGJU</option>
+              </select>
+            </Field>
+            <Field label="نرخ دستی جایگزین" hint="فقط زمانی استفاده می‌شود که نرخ آنلاین در دسترس نباشد.">
+              <input name="manual_rate" type="number" min="0.0000000001" step="any" defaultValue={product?.manual_rate ?? ""} />
+            </Field>
+          </div>
+          <p className="notice">
+            نرخ TGJU به ریال دریافت و هنگام نمایش تومان به‌صورت خودکار تبدیل می‌شود.
+          </p>
+        </section>
+      )}
+      {pricingMode === "converted" && <details className="pretty-details" open>
         <summary>تعدیل، گردکردن و حدود قیمت</summary>
         <div className="form-grid">
           <label className="toggle-card">
@@ -330,7 +358,7 @@ export function ProductEditor({
           STOP یعنی توقف امن ارسال قیمت. این گزینه‌ها را می‌توانید هر زمان
           خاموش و روشن کنید.
         </small>
-      </details>
+      </details>}
       <details className="pretty-details">
         <summary>تخفیف زمان‌دار</summary>
         <div className="form-grid">
@@ -383,17 +411,70 @@ export function ProductEditor({
         />
       </Field>
       <section className="product-media-picker">
-        <div className="section-heading"><div><h3>اتصال پست و ریلز</h3><p>محتوای مرتبط را همین‌جا به محصول وصل کنید؛ برای دریافت فهرست تازه، از بخش مدیا همگام‌سازی کنید.</p></div></div>
+        <div className="section-heading">
+          <div>
+            <h3>اتصال پست و ریلز</h3>
+            <p>پست‌ها و ریلزهای مربوط به این محصول را از نمای شبیه اینستاگرام انتخاب کنید.</p>
+          </div>
+          {mediaIds.length > 0 && <span className="media-selected-count">{mediaIds.length} انتخاب شده</span>}
+        </div>
         <Field label="حساب Instagram">
-          <select value={accountId} onChange={(e) => { setMediaAccount(e.target.value); setMediaIds([]); }}>
+          <select value={accountId} onChange={(e) => { setMediaAccount(e.target.value); setMediaIds([]); setMediaDraftIds([]); }}>
             <option value="">انتخاب حساب</option>
             {accounts.data?.filter((a) => a.active).map((a) => <option value={a.id} key={a.id}>{a.name}</option>)}
           </select>
         </Field>
         {accountId && media.isPending && <Loading />}
         {accountId && media.data?.length === 0 && <p className="notice">برای این حساب هنوز پست یا ریلزی همگام نشده است.</p>}
-        {!!media.data?.length && <div className="product-media-list">{media.data.map((item) => <label className="media-choice" key={item.id}><input type="checkbox" checked={mediaIds.includes(item.id)} onChange={(e) => setMediaIds(e.target.checked ? [...mediaIds, item.id] : mediaIds.filter((id) => id !== item.id))} /><span><b>{item.media_type === "REELS" ? "ریلز" : "پست"}</b> · {item.caption || item.external_id}</span></label>)}</div>}
+        <button
+          type="button"
+          className="media-picker-open"
+          disabled={!accountId || media.isPending || !media.data?.length}
+          onClick={() => { setMediaDraftIds(mediaIds); setMediaPickerOpen(true); }}
+        >
+          {mediaIds.length ? `ویرایش انتخاب‌ها (${mediaIds.length})` : "باز کردن فهرست پست‌ها و ریلزها"}
+        </button>
       </section>
+      {mediaPickerOpen && (
+        <Modal title="انتخاب پست‌ها و ریلزها" close={() => setMediaPickerOpen(false)}>
+          <div className="media-picker-modal">
+            <div className="media-picker-intro">
+              <div>
+                <strong>{accounts.data?.find((account) => account.id === accountId)?.name ?? "حساب Instagram"}</strong>
+                <span>موارد مرتبط را تیک بزنید و در پایان «تأیید انتخاب‌ها» را بزنید.</span>
+              </div>
+              <span className="media-selected-count">{mediaDraftIds.length} انتخاب</span>
+            </div>
+            <div className="media-picker-grid">
+              {media.data?.map((item) => {
+                const selected = mediaDraftIds.includes(item.id);
+                return (
+                  <label className={`media-tile ${selected ? "selected" : ""}`} key={item.id}>
+                    <input
+                      type="checkbox"
+                      aria-label={item.caption || item.external_id}
+                      checked={selected}
+                      onChange={(event) => setMediaDraftIds((current) => event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id))}
+                    />
+                    {item.thumbnail_url ? <img src={item.thumbnail_url} alt="" loading="lazy" /> : <span className="media-tile-placeholder">بدون تصویر</span>}
+                    <span className="media-tile-body">
+                      <b>{item.media_type === "REELS" ? "ریلز" : "پست"}</b>
+                      <small>{item.caption || item.external_id}</small>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="media-picker-footer">
+              <span>{mediaDraftIds.length} مورد برای اتصال انتخاب شده است.</span>
+              <div>
+                <button type="button" className="secondary" onClick={() => setMediaPickerOpen(false)}>لغو</button>
+                <button type="button" onClick={() => { setMediaIds(mediaDraftIds); setMediaPickerOpen(false); }}>تأیید انتخاب‌ها</button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
       <button
         type="button"
         className="secondary"
@@ -475,7 +556,7 @@ export default function Products() {
                 {t(p.pricing_mode)} · {t(p.availability)}
               </p>
               <small>
-                {p.sku || p.slug} · {p.media_count} محتوای متصل · {p.automation_count}{" "}
+                شناسه: {p.slug} · {p.media_count} محتوای متصل · {p.automation_count}{" "}
                 اتوماسیون
               </small>
               <small>آخرین تغییر: {date(p.updated_at)}</small>
