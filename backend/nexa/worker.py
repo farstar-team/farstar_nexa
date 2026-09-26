@@ -118,9 +118,13 @@ def run_one() -> bool:
             db.rollback()
             job = db.get(Job, job.id)
             job.error = type(exc).__name__
+            if job.kind.startswith("notification_"):
+                notification = db.get(Notification, job.payload.get("notification_id"))
+                if notification:
+                    notification.status = "failed"
             job.status = (
                 "unknown"
-                if job.kind in {"send", "telegram", "flow"}
+                if job.kind in {"send", "telegram", "flow"} or job.kind.startswith("notification_")
                 else ("failed" if job.attempts >= 5 else "pending")
             )
             job.available_at = utcnow() + timedelta(seconds=2**job.attempts)

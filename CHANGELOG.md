@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.3] - 2026-09-26
+
+- Mark queued email and Telegram notifications as failed when worker delivery errors occur.
+
 ## [0.4.2] - 2026-09-26
 
 - Updated the release safety-backup schema guard for the support and notification migration.
