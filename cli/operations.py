@@ -117,9 +117,17 @@ def domain(value: str):
         addresses = sorted({item[4][0] for item in socket.getaddrinfo(value, 443, type=socket.SOCK_STREAM)})
         if not addresses:
             raise ValueError("Domain does not resolve")
+        current_sites = {
+            item.strip()
+            for item in rt.environment().get("CADDY_SITE", "").split(",")
+            if item.strip()
+        }
+        caddy_site = value
+        if any(item.startswith("www.") for item in current_sites):
+            caddy_site = f"{value}, www.{value}"
         values = {
             "BASE_URL": "https://" + value,
-            "CADDY_SITE": value,
+            "CADDY_SITE": caddy_site,
             "HTTP_BIND": "0.0.0.0:80",
             "HTTPS_BIND": "0.0.0.0:443",
             "COOKIE_SECURE": "true",
@@ -159,7 +167,7 @@ def domain(value: str):
 
 def diagnostics():
     config = rt.environment()
-    host = config.get("CADDY_SITE", "")
+    host = config.get("CADDY_SITE", "").split(",", 1)[0].strip()
     result = {
         "version": rt.version(),
         "base_url": config.get("BASE_URL"),
