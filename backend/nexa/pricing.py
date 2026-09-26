@@ -217,6 +217,7 @@ class BonbastProvider:
     """Optional commercial Iranian free-market feed; disabled without credentials."""
 
     name = "bonbast"
+    keys = {"USD": "usd1", "EUR": "eur1", "AED": "aed1"}
 
     def health(self):
         return {
@@ -227,7 +228,67 @@ class BonbastProvider:
         }
 
     def get_rate(self, base: str, quote: str) -> ExchangeRate:
-        raise PricingUnavailable("exchange_rate_unavailable")
+        actual_base = "IRR" if base == "TOMAN" else base
+        actual_quote = "IRR" if quote == "TOMAN" else quote
+        now = datetime.now(UTC)
+        if actual_base == actual_quote:
+            rate = Decimal(10 if base == "TOMAN" else 1) / Decimal(10 if quote == "TOMAN" else 1)
+            return ExchangeRate(base, quote, rate, "fixed_conversion", now, now + timedelta(days=1))
+        username = settings().bonbast_username.strip()
+        api_hash = settings().bonbast_hash.strip()
+        if (
+            not username
+            or not api_hash
+            or actual_base not in {"IRR", *self.keys}
+            or actual_quote not in {"IRR", *self.keys}
+        ):
+            raise PricingUnavailable("exchange_rate_unavailable")
+        try:
+            with Redis.from_url(settings().redis_url, socket_connect_timeout=2, socket_timeout=2) as client:
+                key = "fx:bonbast:rates"
+                raw = client.get(key)
+                data = json.loads(raw) if raw else None
+                if not data or float(data.get("expires_at", 0)) <= now.timestamp():
+                    if not client.set(key + ":fetch", "1", nx=True, ex=3600):
+                        raise PricingUnavailable("exchange_rate_unavailable")
+                    try:
+                        response = httpx.post(
+                            settings().bonbast_api_url.rstrip("/") + "/" + username,
+                            data={"hash": api_hash},
+                            timeout=8,
+                        )
+                        response.raise_for_status()
+                        payload = response.json()
+                        rates = {}
+                        for currency, field in self.keys.items():
+                            value = _number(payload.get(field)) if isinstance(payload, dict) else None
+                            if value:
+                                # Bonbast publishes market prices in Toman.
+                                rates[currency] = str(value * 10)
+                        if set(rates) != set(self.keys):
+                            raise PricingUnavailable("exchange_rate_unavailable")
+                        data = {"rates": rates, "fetched_at": now.timestamp()}
+                        data["expires_at"] = now.timestamp() + settings().exchange_cache_ttl
+                        client.set(key, json.dumps(data), ex=172800)
+                        client.set("fx:bonbast:health", "healthy", ex=86400)
+                    except (httpx.HTTPError, ValueError, TypeError, PricingUnavailable):
+                        client.set("fx:bonbast:health", "unavailable", ex=3600)
+                        raise PricingUnavailable("exchange_rate_unavailable") from None
+                rates = {key: Decimal(str(value)) for key, value in data["rates"].items()}
+                irr_per_base = Decimal(1) if actual_base == "IRR" else rates[actual_base]
+                irr_per_quote = Decimal(1) if actual_quote == "IRR" else rates[actual_quote]
+                rate = irr_per_base / irr_per_quote
+                rate *= Decimal(10 if base == "TOMAN" else 1) / Decimal(10 if quote == "TOMAN" else 1)
+                return ExchangeRate(
+                    base,
+                    quote,
+                    rate,
+                    self.name,
+                    datetime.fromtimestamp(float(data["fetched_at"]), UTC),
+                    datetime.fromtimestamp(float(data["expires_at"]), UTC),
+                )
+        except (RedisError, KeyError, TypeError, ValueError):
+            raise PricingUnavailable("exchange_rate_unavailable") from None
 
 
 PROVIDERS: dict[str, ExchangeRateProvider] = {

@@ -293,6 +293,43 @@ def test_live_exchange_rate_is_cached_with_provider_timestamps(monkeypatch):
     assert len(requests) == 1
 
 
+def test_bonbast_provider_uses_sell_prices_in_toman(monkeypatch):
+    now = now_utc()
+    cache = {}
+
+    class FakeRedis:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def get(self, key):
+            return cache.get(key)
+
+        def set(self, key, value, nx=False, ex=None):
+            if nx and key in cache:
+                return False
+            cache[key] = value
+            return True
+
+    def fetch(url, data, timeout):
+        return httpx.Response(
+            200,
+            json={"usd1": "65000", "eur1": "71000", "aed1": "17800"},
+            request=httpx.Request("POST", url),
+        )
+
+    monkeypatch.setattr(settings(), "bonbast_username", "demo")
+    monkeypatch.setattr(settings(), "bonbast_hash", "hash")
+    monkeypatch.setattr(pricing.Redis, "from_url", lambda *args, **kwargs: FakeRedis())
+    monkeypatch.setattr(pricing.httpx, "post", fetch)
+    result = pricing.BonbastProvider().get_rate("USD", "TOMAN")
+    assert result.rate == Decimal("65000")
+    assert result.provider == "bonbast"
+    assert result.fetched_at <= now + timedelta(seconds=1)
+
+
 @pytest.mark.parametrize(
     "change",
     [

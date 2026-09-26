@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.3] - 2026-09-26
+
+- Implemented the optional Bonbast POST API provider using its documented sell-price fields and Toman-to-Rial normalization.
+
 ## [0.3.2] - 2026-09-26
 
 - Display the active exchange-rate provider clearly in Workspace rate settings.
