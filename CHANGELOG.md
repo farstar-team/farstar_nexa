@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.9] - 2026-09-27
+
+- Fixed the release safety-backup schema check so updates can migrate forward from the currently installed database schema without weakening restore validation.
+
 ## [0.5.8] - 2026-09-27
 
 - Reworked automation actions into clear removable cards with Persian help, ready-made templates and a single default action.

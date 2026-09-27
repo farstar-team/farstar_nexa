@@ -85,13 +85,15 @@ def backup(*, restart=True) -> str:
                 "hostname": socket.gethostname(),
                 "sha256": {p.name: checksum(p) for p in temp.iterdir()},
             }
-            validate_metadata(metadata, rt.version())
+            # The safety backup is taken before the new release migrates the database,
+            # so validate it against the schema that was actually dumped.
+            validate_metadata(metadata, rt.version(), expected_schema=schema)
             atomic_json(temp / "metadata.json", metadata)
             archive = folder / (name + ".partial")
             with tarfile.open(archive, "w:gz") as tar:
                 for path in temp.iterdir():
                     tar.add(path, arcname=path.name, recursive=False)
-            validate_archive(archive, rt.version())
+            validate_archive(archive, rt.version(), expected_schema=schema)
             archive.chmod(0o640)
             if hasattr(os, "chown"):
                 os.chown(archive, 0, 10001)
@@ -112,7 +114,7 @@ def backup(*, restart=True) -> str:
     return name
 
 
-def validate_archive(path: Path, installed_version: str) -> dict:
+def validate_archive(path: Path, installed_version: str, expected_schema: str | None = None) -> dict:
     with tarfile.open(path, "r:gz") as tar:
         members = tar.getmembers()
         expected = {"metadata.json", "database.dump", "nexa.env", "Caddyfile"}
@@ -122,7 +124,7 @@ def validate_archive(path: Path, installed_version: str) -> dict:
         if sizes["metadata.json"] > 16384 or sizes["nexa.env"] > 65536 or sizes["Caddyfile"] > 65536:
             raise ValueError("Invalid backup component size")
         metadata = json.load(tar.extractfile("metadata.json"))
-        validate_metadata(metadata, installed_version)
+        validate_metadata(metadata, installed_version, expected_schema=expected_schema)
         for name, expected_hash in metadata["sha256"].items():
             if hashlib.file_digest(tar.extractfile(name), "sha256").hexdigest() != expected_hash:
                 raise ValueError("Backup checksum mismatch")

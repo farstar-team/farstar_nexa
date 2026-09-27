@@ -11,7 +11,7 @@ OPERATIONS = {"backup", "restore", "delete-backup", "domain", "ssl", "update", "
 BACKUP_NAME = re.compile(r"^nexa-[0-9]{8}T[0-9]{6}-[a-f0-9]{8}\.tar\.gz$")
 RELEASE = re.compile(r"^v\d+\.\d+\.\d+$")
 DOMAIN = re.compile(r"^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
-CURRENT_SCHEMA = "0003"
+CURRENT_SCHEMA = "0005"
 
 
 def canonical(value: dict) -> bytes:
@@ -37,13 +37,14 @@ def validate_operation(action: str, argument: str, confirmed: bool):
         raise ValueError("confirmation_required")
 
 
-def validate_metadata(data: dict, installed_version: str):
+def validate_metadata(data: dict, installed_version: str, expected_schema: str | None = None):
     if data.get("format") != 1 or data.get("product") != "farstar-nexa":
         raise ValueError("unsupported_backup_format")
     if not re.fullmatch(r"\d+\.\d+\.\d+", data.get("version", "")):
         raise ValueError("invalid_backup_version")
     # Restore only this release's exact application schema. Cross-version recovery is explicit operator work.
-    if data["version"] != installed_version or data.get("schema") != CURRENT_SCHEMA:
+    expected_schema = expected_schema or CURRENT_SCHEMA
+    if data["version"] != installed_version or data.get("schema") != expected_schema:
         raise ValueError("incompatible_backup")
     datetime.fromisoformat(data["created_at"])
     if not data.get("hostname") or set(data.get("sha256", {})) != {"database.dump", "nexa.env", "Caddyfile"}:
