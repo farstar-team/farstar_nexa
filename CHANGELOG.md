@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.12] - 2026-09-27
+
+- Made configured support handles open the correct Telegram, Instagram, channel, or email destination automatically.
+
 ## [0.5.11] - 2026-09-27
 
 - Replaced live chat with a configurable support contact page and a redesigned ticket center.
