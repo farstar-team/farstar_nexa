@@ -148,3 +148,8 @@ Initial Farstar Nexa foundation release.
 - Added CI, unit tests, documentation and third-party license notices.
 
 Production acceptance for a fresh Ubuntu 24.04 host, external Meta/Telegram credentials, live backup/restore and release updates remains an operational gate described in `docs/validation.md`.
+
+## [0.5.10] - 2026-09-27
+
+- Added Persian messages for team access, product assignment and automation FAQ validation errors.
+
