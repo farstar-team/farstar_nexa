@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.8] - 2026-09-27
+
+- Reworked automation actions into clear removable cards with Persian help, ready-made templates and a single default action.
+- Added optional product FAQ quick replies and configurable public comment follow-ups after direct messages.
+- Improved message variables with friendly labels, token previews and a variable guide while preserving insertion at the text cursor.
+- Added owner-managed sales subaccounts with product assignment, password control and product access checks.
+- Added concise activity filtering and administrator audit IP logging for sign-ins.
+
 ## [0.5.7] - 2026-09-26
 
 - Removed the public logo download button while keeping the brand asset available for the site.

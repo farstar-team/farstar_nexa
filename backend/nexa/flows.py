@@ -71,7 +71,15 @@ def queue_flow(db, rule, incoming, conversation, account, data, *, dry_run=False
             InstagramMedia.external_id == data.get("media_external_id", ""),
         )
     )
-    matched = trigger_matches(rule, incoming.text, media)
+    faq_answer = ""
+    faq_payload = str(data.get("quick_reply_payload", ""))
+    if faq_payload.startswith("nexa_faq:") and rule.flow:
+        faq_id = faq_payload.removeprefix("nexa_faq:")
+        faq_answer = next(
+            (str(item.get("answer", "")) for item in rule.flow.get("faq_items", []) if item.get("id") == faq_id),
+            "",
+        )
+    matched = bool(faq_answer) or trigger_matches(rule, incoming.text, media)
     if not matched and not force_report:
         return None
     product_id = rule.product_id or (media.product_id if media else None)
@@ -117,17 +125,27 @@ def queue_flow(db, rule, incoming, conversation, account, data, *, dry_run=False
             "occurred_at": data.get("occurred_at"),
             "sample_rate": data.get("sample_rate") if dry_run else None,
             "matched": matched,
+            "faq_answer": faq_answer,
         },
     )
     db.add(execution)
     db.flush()
+    quick_replies = []
+    if rule.flow.get("faq_enabled"):
+        quick_replies = [
+            {"content_type": "text", "title": str(item["question"])[:20], "payload": "nexa_faq:" + item["id"]}
+            for item in rule.flow.get("faq_items", [])
+        ]
     for position, action in enumerate(rule.flow["actions"]):
+        action_config = dict(action)
+        if action_config["type"].startswith("SEND_") and quick_replies:
+            action_config["quick_replies"] = quick_replies
         db.add(
             ActionExecution(
                 execution_id=execution.id,
                 position=position,
                 kind=action["type"],
-                config=action,
+                config=action_config,
                 status="pending" if status == "queued" else "skipped",
             )
         )
@@ -321,7 +339,7 @@ def run_flow(db, job=None, *, execution=None):
                 values, pricing = template_context(db, execution, product)
                 if action.kind in {"SEND_PRODUCT", "SEND_PRICE"} and not product:
                     raise ValueError("product_required")
-                text = render(action.config["template"], values)
+                text = execution.context.get("faq_answer") or render(action.config["template"], values)
                 action.result = {"rendered_text": text, "pricing": pricing, "simulated": execution.dry_run}
                 if execution.dry_run:
                     action.status = "simulated"
@@ -344,9 +362,9 @@ def run_flow(db, job=None, *, execution=None):
                     try:
                         adapter = provider(account.provider)
                         receipt = (
-                            adapter.private_reply(account, execution.event_id, text, action.id)
+                            adapter.private_reply(account, execution.event_id, text, action.id, action.config.get("quick_replies"))
                             if execution.trigger == "instagram.comment"
-                            else adapter.send(account, execution.context["sender"], text, action.id)
+                            else adapter.send(account, execution.context["sender"], text, action.id, action.config.get("quick_replies"))
                         )
                     except RateLimited:
                         outgoing.status = "queued"
@@ -360,6 +378,13 @@ def run_flow(db, job=None, *, execution=None):
                     outgoing.status = action.status = "sent"
                     outgoing.provider_message_id = receipt.message_id
                     action.result = {**action.result, "provider_message_id": receipt.message_id}
+                    comment_reply = rule.flow.get("comment_reply", {}) if rule.flow else {}
+                    if execution.trigger == "instagram.comment" and comment_reply.get("enabled"):
+                        try:
+                            public_receipt = adapter.comment_reply(account, execution.event_id, comment_reply["text"])
+                            action.result = {**action.result, "public_comment_id": public_receipt.message_id}
+                        except (DeliveryRejected, DeliveryUnknown) as exc:
+                            action.result = {**action.result, "public_comment_error": str(exc)}
             else:
                 if execution.dry_run:
                     action.status, action.result = (

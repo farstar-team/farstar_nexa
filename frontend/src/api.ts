@@ -37,6 +37,7 @@ export type User = {
   role: "USER" | "ADMIN" | "SUPER_ADMIN";
   active: boolean;
   timezone: string;
+  workspace_owner?: boolean;
 };
 export type Config = {
   mock_mode: boolean;
@@ -56,7 +57,7 @@ export type Rule = {
   product_id: string | null;
   scope: string;
   media_ids: string[];
-  flow: { version?: number; actions?: import("./commerce").Action[] };
+  flow: import("./commerce").AutomationFlow;
   id: string;
   account_id: string;
   name: string;
@@ -97,6 +98,18 @@ export type Activity = {
   id: string;
   action: string;
   target: string;
+  created_at: string;
+  ip_address?: string;
+  detail?: Record<string, unknown>;
+};
+export type TeamMember = {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  active: boolean;
+  product_ids: string[];
+  products: { id: string; name: string }[];
   created_at: string;
 };
 export type Operation = {

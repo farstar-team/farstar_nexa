@@ -67,6 +67,14 @@ export type Action = {
   value: string;
   seconds: number;
 };
+export type FAQItem = { id: string; question: string; answer: string };
+export type AutomationFlow = {
+  version?: number;
+  actions?: Action[];
+  faq_enabled?: boolean;
+  faq_items?: FAQItem[];
+  comment_reply?: { enabled: boolean; text: string };
+};
 export type ExecutionDetail = {
   id: string;
   automation_id: string;
@@ -158,6 +166,30 @@ export const variableLabels: Record<string, string> = {
   "instagram.username": "نام کاربری اینستاگرام",
   "media.caption": "عنوان پست",
   "media.url": "لینک پست",
+};
+export const variableDescriptions: Record<string, string> = {
+  "customer.id": "شناسه داخلی مشتری را نشان می‌دهد.",
+  "customer.name": "نام مشتری را در متن می‌گذارد.",
+  "comment.id": "شناسه کامنت یا رویداد دریافتی را نشان می‌دهد.",
+  "comment.text": "متن کامنت یا پیام مشتری را وارد می‌کند.",
+  "product.name": "نام محصول انتخاب‌شده را نشان می‌دهد.",
+  "product.description": "توضیحات محصول را وارد می‌کند.",
+  "product.sku": "کد کالای محصول را نشان می‌دهد.",
+  "product.availability": "وضعیت موجودی محصول را نشان می‌دهد.",
+  "product.base_price": "قیمت اولیه ثبت‌شده برای محصول را نشان می‌دهد.",
+  "product.base_currency": "ارز قیمت اولیه محصول را نشان می‌دهد.",
+  "product.price": "قیمت نهایی پس از تبدیل، سود و تخفیف را نشان می‌دهد.",
+  "product.currency": "واحد پول قیمت نهایی را نشان می‌دهد.",
+  "product.converted_price": "قیمت پس از تبدیل ارز، قبل از سود و تخفیف را نشان می‌دهد.",
+  "product.original_price": "قیمت قبل از کم شدن تخفیف را نشان می‌دهد.",
+  "product.discount": "مقدار تخفیف محصول را نشان می‌دهد.",
+  "product.url": "لینک محصول را وارد می‌کند.",
+  "exchange.rate": "نرخ تبدیل استفاده‌شده را نشان می‌دهد.",
+  "exchange.source": "منبع نرخ تبدیل را نشان می‌دهد.",
+  "exchange.updated_at": "زمان آخرین دریافت نرخ را نشان می‌دهد.",
+  "instagram.username": "نام کاربری اینستاگرام مشتری را نشان می‌دهد.",
+  "media.caption": "عنوان پست یا ریلز را وارد می‌کند.",
+  "media.url": "لینک پست یا ریلز را وارد می‌کند.",
 };
 export const newAction = (type = "SEND_PRICE"): Action => ({
   type,

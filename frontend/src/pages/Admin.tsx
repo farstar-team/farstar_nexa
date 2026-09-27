@@ -450,6 +450,7 @@ export default function Admin({ user }: { user: User }) {
                   <tr>
                     <th>{t("action")}</th>
                     <th>{t("detail")}</th>
+                    <th>{t("ip")}</th>
                     <th>{t("date")}</th>
                   </tr>
                 </thead>
@@ -462,6 +463,7 @@ export default function Admin({ user }: { user: User }) {
                       <td>
                         <code>{row.target}</code>
                       </td>
+                      <td><code dir="ltr">{row.ip_address || "—"}</code></td>
                       <td>{date(row.created_at, user.timezone)}</td>
                     </tr>
                   ))}

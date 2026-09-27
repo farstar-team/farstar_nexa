@@ -30,6 +30,16 @@ class Workspace(Identity, Base):
     name: Mapped[str] = mapped_column(String(120))
 
 
+class WorkspaceMember(Identity, Base):
+    __tablename__ = "workspace_members"
+    __table_args__ = (UniqueConstraint("workspace_id", "user_id"),)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    role: Mapped[str] = mapped_column(String(24), default="SALES_MANAGER", server_default="SALES_MANAGER")
+    product_ids: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+
+
 class Session(Identity, Base):
     __tablename__ = "sessions"
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
@@ -224,6 +234,7 @@ class Audit(Identity, Base):
     user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), index=True)
     action: Mapped[str] = mapped_column(String(64))
     target: Mapped[str] = mapped_column(String(128), default="")
+    ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
     detail: Mapped[dict] = mapped_column(JSON, default=dict)
 
 

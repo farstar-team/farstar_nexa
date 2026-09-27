@@ -3,6 +3,7 @@ import { api } from "../api";
 import type { User } from "../api";
 import { Field, Form, PageTitle } from "../components";
 import { t } from "../i18n";
+import TeamManagement from "./TeamManagement";
 
 export default function Settings({ user }: { user: User }) {
   const cache = useQueryClient();
@@ -87,6 +88,7 @@ export default function Settings({ user }: { user: User }) {
           </Form>
         </section>
       </div>
+      {user.workspace_owner && <TeamManagement />}
     </>
   );
 }

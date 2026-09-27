@@ -10,7 +10,18 @@ from sqlalchemy import text
 
 from nexa.config import settings, version
 from nexa.db import SessionLocal
-from nexa.routes import admin, auth, commerce, content, instagram, notifications, support, webhooks, workspace
+from nexa.routes import (
+    admin,
+    auth,
+    commerce,
+    content,
+    instagram,
+    notifications,
+    support,
+    team,
+    webhooks,
+    workspace,
+)
 
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
 logging.getLogger("httpcore").setLevel(logging.CRITICAL)
@@ -26,6 +37,7 @@ for router in (
     support.router,
     notifications.router,
     content.router,
+    team.router,
 ):
     app.include_router(router)
 

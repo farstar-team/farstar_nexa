@@ -50,7 +50,7 @@ class Login(BaseModel):
     password: str = Field(min_length=1, max_length=256)
 
 
-def user_dict(user: User):
+def user_dict(user: User, workspace_owner: bool | None = None):
     return {
         "id": user.id,
         "username": user.username,
@@ -58,6 +58,7 @@ def user_dict(user: User):
         "role": user.role,
         "active": user.active,
         "timezone": user.timezone,
+        **({"workspace_owner": workspace_owner} if workspace_owner is not None else {}),
         "created_at": user.created_at.isoformat() + "Z",
     }
 
@@ -75,7 +76,7 @@ def create_user(db, data: Register, role="USER"):
     return user
 
 
-def _set_session(db, user: User, response: Response, action: str):
+def _set_session(db, user: User, response: Response, action: str, ip_address: str | None = None):
     token, csrf = secrets.token_urlsafe(48), secrets.token_urlsafe(32)
     db.add(
         Session(
@@ -85,7 +86,7 @@ def _set_session(db, user: User, response: Response, action: str):
             expires_at=utcnow() + timedelta(hours=settings().session_hours),
         )
     )
-    audit(db, user.id, action)
+    audit(db, user.id, action, ip_address=ip_address)
     db.commit()
     opts = {
         "secure": settings().cookie_secure,
@@ -105,7 +106,7 @@ def register(data: Register, request: Request, db: DBSession = Depends(get_db)):
     rate_limit("register:" + request.client.host, 5, 3600)
     try:
         user = create_user(db, data)
-        audit(db, user.id, "auth.register")
+        audit(db, user.id, "auth.register", ip_address=request.client.host)
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -121,7 +122,7 @@ def login(data: Login, request: Request, response: Response, db: DBSession = Dep
     valid = verify_password(data.password, user.password_hash if user else DUMMY_HASH)
     if not valid or not user or not user.active:
         raise HTTPException(401, "invalid_credentials")
-    return _set_session(db, user, response, "auth.login")
+    return _set_session(db, user, response, "auth.login", request.client.host)
 
 
 def _google_redirect(status: str) -> RedirectResponse:
@@ -282,7 +283,7 @@ def google_callback(
         elif not user.active:
             return _google_callback_redirect("failed", request)
         redirect = _google_callback_redirect("success", request)
-        _set_session(db, user, redirect, action)
+        _set_session(db, user, redirect, action, request.client.host)
         return redirect
     except (httpx.HTTPError, KeyError, TypeError, ValueError, IntegrityError):
         db.rollback()
@@ -290,8 +291,9 @@ def google_callback(
 
 
 @router.get("/me")
-def me(user: User = Depends(current_user)):
-    return user_dict(user)
+def me(user: User = Depends(current_user), db: DBSession = Depends(get_db)):
+    owner = db.scalar(select(Workspace).where(Workspace.owner_id == user.id)) is not None
+    return user_dict(user, owner)
 
 
 @router.post("/logout")
@@ -299,7 +301,7 @@ def logout(
     request: Request, response: Response, user: User = Depends(current_user), db: DBSession = Depends(get_db)
 ):
     db.delete(request.state.session)
-    audit(db, user.id, "auth.logout")
+    audit(db, user.id, "auth.logout", ip_address=request.client.host)
     db.commit()
     response.delete_cookie("nexa_session", path="/")
     response.delete_cookie("nexa_csrf", path="/")

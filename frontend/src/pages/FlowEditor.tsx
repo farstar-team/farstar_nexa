@@ -1,12 +1,35 @@
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import { api } from "../api";
 import type { Account, Rule } from "../api";
-import type { Action, Media, Product } from "../commerce";
-import { newAction, variableLabels, variables } from "../commerce";
+import type { Action, FAQItem, Media, Product } from "../commerce";
+import { newAction, variableDescriptions, variableLabels, variables } from "../commerce";
 import { ErrorNotice, Field, Form, HelpTip } from "../components";
 import { t } from "../i18n";
 import ExecutionDetail from "./ExecutionDetail";
+
+const actionHelp: Record<string, string> = {
+  SEND_DM: "یک متن برای مشتری در دایرکت می‌فرستد. برای لینک، توضیح کوتاه یا پاسخ معمولی از این گزینه استفاده کنید.",
+  SEND_PRODUCT: "نام، توضیحات، لینک و اطلاعات محصول را برای مشتری می‌فرستد.",
+  SEND_PRICE: "قیمت نهایی محصول را با توجه به تنظیمات قیمت‌گذاری برای مشتری می‌فرستد.",
+  ADD_TAG: "یک برچسب داخلی به مخاطب اضافه می‌کند؛ مثلاً «پیگیری» یا «علاقه‌مند». مشتری این برچسب را نمی‌بیند.",
+  CREATE_OR_UPDATE_LEAD: "مخاطب را در بخش مخاطبان فروش ثبت می‌کند یا اطلاعات قبلی او را به‌روز می‌کند.",
+  DELAY: "قبل از اقدام بعدی چند ثانیه صبر می‌کند.",
+  INTERNAL_NOTE: "یک یادداشت داخلی برای تیم فروش ثبت می‌کند؛ مشتری آن را نمی‌بیند.",
+};
+
+const presetHelp: Record<string, string> = {
+  price: "وقتی مشتری درباره قیمت کامنت می‌گذارد، قیمت نهایی محصول برای او ارسال می‌شود.",
+  product: "اطلاعات محصول و لینک آن برای مشتری ارسال می‌شود.",
+  link: "یک پیام کوتاه شامل لینک محصول برای مشتری ارسال می‌شود.",
+  text: "یک متن ثابت برای پاسخ سریع به مشتری ارسال می‌شود.",
+  lead: "فقط مخاطب را ثبت می‌کند تا بعداً تیم فروش پیگیری کند.",
+};
+
+function newFaq(): FAQItem {
+  return { id: `faq-${crypto.randomUUID().slice(0, 8)}`, question: "", answer: "" };
+}
 
 export default function FlowEditor({
   rule,
@@ -32,10 +55,13 @@ export default function FlowEditor({
   const [keywords, setKeywords] = useState(rule?.keywords.join("، ") ?? "قیمت");
   const [actions, setActions] = useState<Action[]>(
     rule?.flow?.actions ?? [
-      { ...newAction("CREATE_OR_UPDATE_LEAD") },
       newAction(),
     ],
   );
+  const [faqEnabled, setFaqEnabled] = useState(rule?.flow?.faq_enabled ?? false);
+  const [faqItems, setFaqItems] = useState<FAQItem[]>(rule?.flow?.faq_items ?? []);
+  const [commentReplyEnabled, setCommentReplyEnabled] = useState(rule?.flow?.comment_reply?.enabled ?? false);
+  const [commentReplyText, setCommentReplyText] = useState(rule?.flow?.comment_reply?.text ?? "قیمت برای شما در دایرکت ارسال شد.");
   const [cooldown, setCooldown] = useState(rule?.cooldown_seconds ?? 60);
   const [priority, setPriority] = useState(rule?.priority ?? 0);
   const [error, setError] = useState<unknown>();
@@ -67,15 +93,17 @@ export default function FlowEditor({
       textarea?.setSelectionRange(caret, caret);
     });
   }
-  function applyPreset(preset: "price" | "message") {
-    setTrigger(preset === "price" ? "instagram.comment" : "message.keyword");
-    setScope(preset === "price" ? "PRODUCT_MEDIA" : "ANY_CONNECTED_MEDIA");
+  function applyPreset(preset: "price" | "product" | "link" | "text" | "lead") {
+    const isComment = preset === "price" || preset === "product";
+    setTrigger(isComment ? "instagram.comment" : "message.keyword");
+    setScope(isComment ? "PRODUCT_MEDIA" : "ANY_CONNECTED_MEDIA");
     setMode("contains");
-    setKeywords(preset === "price" ? "قیمت، هزینه" : "سلام، موجودی، سفارش");
-    setActions([
-      { ...newAction("CREATE_OR_UPDATE_LEAD") },
-      { ...newAction(preset === "price" ? "SEND_PRICE" : "SEND_PRODUCT") },
-    ]);
+    setKeywords(preset === "price" ? "قیمت، هزینه" : preset === "product" ? "مشخصات، اطلاعات" : preset === "link" ? "لینک، آدرس" : preset === "lead" ? "تماس، مشاوره" : "سلام، ممنون، راهنما");
+    if (preset === "price") setActions([newAction("SEND_PRICE")]);
+    if (preset === "product") setActions([newAction("SEND_PRODUCT")]);
+    if (preset === "link") setActions([{ ...newAction("SEND_DM"), template: "سلام {{customer.name}}؛ لینک محصول: {{product.url}}" }]);
+    if (preset === "text") setActions([{ ...newAction("SEND_DM"), template: "سلام {{customer.name}}؛ پیام شما دریافت شد. به‌زودی راهنمایی‌تان می‌کنیم." }]);
+    if (preset === "lead") setActions([newAction("CREATE_OR_UPDATE_LEAD")]);
     setStep(1);
   }
   async function save() {
@@ -100,7 +128,13 @@ export default function FlowEditor({
           priority,
           cooldown_seconds: cooldown,
           status: "DRAFT",
-          flow: { version: 2, actions },
+          flow: {
+            version: 2,
+            actions,
+            faq_enabled: faqEnabled,
+            faq_items: faqItems.filter((item) => item.question.trim() && item.answer.trim()),
+            comment_reply: { enabled: commentReplyEnabled, text: commentReplyText },
+          },
         },
       );
       done();
@@ -127,8 +161,11 @@ export default function FlowEditor({
       <section className="automation-start card">
         <div><span className="eyebrow">شروع سریع <HelpTip text="یکی از دو الگوی آماده را بزنید تا شرط‌ها و اقدام‌های معمول خودکار پر شوند." /></span><h3>از یک الگوی آماده شروع کنید</h3><p>فقط محصول و حساب را انتخاب کنید؛ شرط‌ها و اقدام‌های رایج از قبل آماده می‌شوند.</p></div>
         <div className="automation-presets">
-          <button type="button" className="secondary" onClick={() => applyPreset("price")}>پاسخ قیمت روی پست و ریلز</button>
-          <button type="button" className="secondary" onClick={() => applyPreset("message")}>پاسخ به دایرکت</button>
+          {(Object.keys(presetHelp) as Array<"price" | "product" | "link" | "text" | "lead">).map((preset) => (
+            <button type="button" className="secondary preset-button" key={preset} onClick={() => applyPreset(preset)} title={presetHelp[preset]}>
+              {preset === "price" ? "پاسخ قیمت" : preset === "product" ? "اطلاعات محصول" : preset === "link" ? "ارسال لینک" : preset === "text" ? "پاسخ متن ثابت" : "ثبت مخاطب"}
+            </button>
+          ))}
         </div>
       </section>
       <ErrorNotice error={error ?? products.error ?? media.error} />
@@ -240,6 +277,38 @@ export default function FlowEditor({
               />
             </Field>
           )}
+          {trigger === "message.keyword" && (
+            <details className="pretty-details" open={faqEnabled}>
+              <summary>سؤال و جواب آماده برای مشتری</summary>
+              <div>
+                <label className="toggle-card">
+                  <input type="checkbox" checked={faqEnabled} onChange={(event) => setFaqEnabled(event.target.checked)} />
+                  <span><b>نمایش سؤال‌های آماده در دایرکت</b><small>مشتری سؤال را انتخاب می‌کند و پاسخ ثبت‌شده برای او ارسال می‌شود.</small></span>
+                </label>
+                {faqEnabled && <div className="faq-builder">
+                  {!faqItems.length && <p className="field-help">برای شروع، یک سؤال و جواب اضافه کنید.</p>}
+                  {faqItems.map((item, index) => <div className="faq-builder-row" key={item.id}>
+                    <Field label={`سؤال ${index + 1}`}><input value={item.question} placeholder="مثلاً هزینه ارسال چقدر است؟" onChange={(event) => setFaqItems(faqItems.map((current) => current.id === item.id ? { ...current, question: event.target.value } : current))} /></Field>
+                    <Field label="جواب"><textarea rows={2} value={item.answer} placeholder="پاسخ کوتاه و روشن بنویسید." onChange={(event) => setFaqItems(faqItems.map((current) => current.id === item.id ? { ...current, answer: event.target.value } : current))} /></Field>
+                    <button type="button" className="icon-button action-remove" aria-label="حذف سؤال" onClick={() => setFaqItems(faqItems.filter((current) => current.id !== item.id))}><X size={17} /></button>
+                  </div>)}
+                  <button type="button" className="secondary" disabled={faqItems.length >= 8} onClick={() => setFaqItems([...faqItems, newFaq()])}>+ سؤال و جواب جدید</button>
+                </div>}
+              </div>
+            </details>
+          )}
+          {trigger === "instagram.comment" && (
+            <details className="pretty-details">
+              <summary>کامنت عمومی بعد از ارسال دایرکت</summary>
+              <div>
+                <label className="toggle-card">
+                  <input type="checkbox" checked={commentReplyEnabled} onChange={(event) => setCommentReplyEnabled(event.target.checked)} />
+                  <span><b>بعد از دایرکت، زیر همان کامنت پیام بگذار</b><small>این پیام عمومی است و همهٔ کسانی که پست را می‌بینند آن را می‌بینند.</small></span>
+                </label>
+                {commentReplyEnabled && <Field label="متن کامنت"><textarea rows={2} value={commentReplyText} maxLength={1000} onChange={(event) => setCommentReplyText(event.target.value)} /></Field>}
+              </div>
+            </details>
+          )}
           <div className="form-grid">
             <Field label="فاصله بین دو پاسخ به یک مشتری (ثانیه)" help="برای جلوگیری از پاسخ‌های تکراری، تا این مدت دوباره پاسخ مشابه ارسال نمی‌شود.">
               <input
@@ -268,9 +337,14 @@ export default function FlowEditor({
             برای هر رویداد یک پیام مجاز است. پاسخ خصوصی کامنت تا ۷ روز؛ پیام
             بعدی فقط پس از پاسخ مخاطب و در بازهٔ ۲۴ساعته.
           </p>
+          {!actions.length && <p className="empty action-empty">هنوز اقدامی اضافه نشده است. از دکمه «اقدام جدید» استفاده کنید.</p>}
           {actions.map((a, i) => (
-            <section className="action-editor" key={i}>
-              <Field label={`اقدام ${i + 1}`} help="این کار بعد از منطبق‌شدن محرک انجام می‌شود؛ مثل ارسال قیمت، ثبت مشتری یا افزودن برچسب.">
+            <section className="action-editor action-card" key={i}>
+              <div className="action-card-header">
+                <div><span className="eyebrow">مرحله {i + 1}</span><h3>{t(a.type)}</h3></div>
+                <div className="action-card-tools"><HelpTip text={actionHelp[a.type] ?? "این اقدام بعد از برقرار شدن شرط اجرا می‌شود."} /><button type="button" className="icon-button action-remove" aria-label={`حذف ${t(a.type)}`} onClick={() => setActions(actions.filter((_, n) => n !== i))}><X size={18} /></button></div>
+              </div>
+              <Field label={`نوع اقدام مرحله ${i + 1}`} help={actionHelp[a.type] ?? "نوع کاری را انتخاب کنید که بعد از برقرار شدن شرط انجام شود."}>
                 <select
                   value={a.type}
                   onChange={(e) => update(i, { type: e.target.value })}
@@ -316,18 +390,19 @@ export default function FlowEditor({
                     <div className="variable-list">
                       {variables.map((v) => (
                         <button
-                          className="secondary"
+                          className="secondary variable-chip"
                           type="button"
                           key={v}
                           draggable
-                          title={`{{${v}}}`}
+                          title={variableDescriptions[v] ?? v}
                           onDragStart={(e) => e.dataTransfer.setData("text/plain", `{{${v}}}`)}
                           onClick={() => insertVariable(i, v)}
                         >
-                          {variableLabels[v] ?? v}
+                          <span>{variableLabels[v] ?? v}</span><code>{`{{${v}}}`}</code>
                         </button>
                       ))}
                     </div>
+                    <div className="variable-guide"><strong>راهنمای متغیرها</strong>{variables.map((v) => <div key={v}><code>{`{{${v}}}`}</code><span>{variableDescriptions[v] ?? "مقدار این متغیر در پیام نمایش داده می‌شود."}</span></div>)}</div>
                   </details>
                 </>
               )}
@@ -353,7 +428,7 @@ export default function FlowEditor({
                   />
                 </Field>
               )}
-              <div className="heading-actions">
+              <div className="heading-actions action-order-tools">
                 <button
                   type="button"
                   className="secondary"
@@ -369,10 +444,14 @@ export default function FlowEditor({
                 <button
                   type="button"
                   className="secondary"
-                  disabled={actions.length === 1}
-                  onClick={() => setActions(actions.filter((_, n) => n !== i))}
+                  disabled={i === actions.length - 1}
+                  onClick={() => {
+                    const next = [...actions];
+                    [next[i], next[i + 1]] = [next[i + 1], next[i]];
+                    setActions(next);
+                  }}
                 >
-                  حذف اقدام
+                  پایین‌تر
                 </button>
               </div>
             </section>
@@ -382,11 +461,11 @@ export default function FlowEditor({
               type="button"
               className="secondary"
               disabled={actions.length >= 12}
-              onClick={() => setActions([...actions, newAction("ADD_TAG")])}
+              onClick={() => setActions([...actions, newAction()])}
             >
-              افزودن اقدام
+              + اقدام جدید
             </button>
-            <HelpTip text="یک اقدام دیگر به ترتیب اجرای اتوماسیون اضافه می‌کند." />
+            <HelpTip text="یک کارت تازه برای کار بعدی اضافه می‌کند. ترتیب کارت‌ها همان ترتیب اجراست." />
           </div>
         </>
       )}
@@ -415,7 +494,7 @@ export default function FlowEditor({
             به‌صورت پیش‌نویس ذخیره می‌شود. سپس Dry Run را اجرا کنید و برای ارسال
             واقعی آن را فعال کنید.
           </p>
-          <button disabled={busy || !name.trim() || !account} onClick={save}>
+          <button disabled={busy || !name.trim() || !account || !actions.length} onClick={save}>
             ذخیره پیش‌نویس
           </button>
         </section>

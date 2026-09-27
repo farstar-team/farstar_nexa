@@ -104,15 +104,37 @@ class ActionInput(StrictInput):
         return self
 
 
+class FAQItem(StrictInput):
+    id: str = Field(pattern=r"^[a-zA-Z0-9_-]{1,40}$")
+    question: str = Field(min_length=1, max_length=180)
+    answer: str = Field(min_length=1, max_length=800)
+
+
+class CommentReply(StrictInput):
+    enabled: bool = False
+    text: str = Field(default="", max_length=1000)
+
+    @model_validator(mode="after")
+    def valid_text(self):
+        if self.enabled and not self.text.strip():
+            raise ValueError("comment_reply_text_required")
+        return self
+
+
 class FlowInput(StrictInput):
     version: Literal[2] = 2
     actions: list[ActionInput] = Field(min_length=1, max_length=12)
+    faq_enabled: bool = False
+    faq_items: list[FAQItem] = Field(default_factory=list, max_length=8)
+    comment_reply: CommentReply = Field(default_factory=CommentReply)
 
     @model_validator(mode="after")
     def one_reply(self):
         # A second message requires a new inbound messaging event and its own flow.
         if sum(a.type.startswith("SEND_") for a in self.actions) > 1:
             raise ValueError("one_message_per_trigger")
+        if self.faq_enabled and not self.faq_items:
+            raise ValueError("faq_items_required")
         return self
 
 

@@ -23,7 +23,7 @@ from nexa.models import (
 from nexa.pricing import PROVIDERS, PricingUnavailable, calculate
 from nexa.providers import DeliveryRejected, InstagramProvider
 from nexa.routes.workspace import serialize
-from nexa.security import audit, current_user, owned, rate_limit, workspace
+from nexa.security import audit, can_access_product, current_user, owned, rate_limit, workspace
 
 router = APIRouter(prefix="/api", tags=["commerce"])
 PRODUCT_FIELDS = "id name slug description sku status availability base_price base_currency output_currency pricing_mode manual_rate pricing url custom_fields created_at updated_at"
@@ -66,6 +66,8 @@ def products(user: User = Depends(current_user), db: Session = Depends(get_db), 
     )
     result = []
     for row, linked_media, linked_automations in rows:
+        if not can_access_product(db, user, row.workspace_id, row.id):
+            continue
         item = serialize(row, PRODUCT_FIELDS)
         item.update(media_count=linked_media, automation_count=linked_automations)
         result.append(item)
@@ -103,6 +105,8 @@ def edit_product(
     identity: str, data: ProductInput, user: User = Depends(current_user), db: Session = Depends(get_db)
 ):
     row = owned(db, Product, identity, workspace(db, user).id)
+    if not can_access_product(db, user, row.workspace_id, row.id):
+        raise HTTPException(403, "product_access_required")
     for key, value in product_values(data).items():
         setattr(row, key, value)
     return save_product(db, user, row)
@@ -111,6 +115,8 @@ def edit_product(
 @router.delete("/products/{identity}")
 def delete_product(identity: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     row = owned(db, Product, identity, workspace(db, user).id)
+    if not can_access_product(db, user, row.workspace_id, row.id):
+        raise HTTPException(403, "product_access_required")
     for model in (Automation, InstagramMedia, Execution):
         if db.scalar(select(model.id).where(model.product_id == row.id).limit(1)):
             raise HTTPException(409, "product_in_use_deactivate_instead")
@@ -265,6 +271,8 @@ def link_product(data: LinkInput, user: User = Depends(current_user), db: Sessio
     ws = workspace(db, user)
     if data.product_id:
         owned(db, Product, data.product_id, ws.id)
+        if not can_access_product(db, user, ws.id, data.product_id):
+            raise HTTPException(403, "product_access_required")
     rows = [owned(db, InstagramMedia, identity, ws.id) for identity in data.media_ids]
     for row in rows:
         row.product_id = data.product_id

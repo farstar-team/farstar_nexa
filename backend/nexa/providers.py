@@ -30,18 +30,22 @@ class Receipt:
 
 
 class Provider(Protocol):
-    def send(self, account: Account, recipient: str, text: str, key: str) -> Receipt: ...
-    def private_reply(self, account: Account, comment_id: str, text: str, key: str) -> Receipt: ...
+    def send(self, account: Account, recipient: str, text: str, key: str, quick_replies=None) -> Receipt: ...
+    def private_reply(self, account: Account, comment_id: str, text: str, key: str, quick_replies=None) -> Receipt: ...
+    def comment_reply(self, account: Account, comment_id: str, text: str) -> Receipt: ...
 
 
 class MockInstagramProvider:
-    def send(self, account: Account, recipient: str, text: str, key: str) -> Receipt:
+    def send(self, account: Account, recipient: str, text: str, key: str, quick_replies=None) -> Receipt:
         if not settings().mock_mode:
             raise DeliveryRejected("mock_disabled")
         return Receipt("mock:" + key)
 
-    def private_reply(self, account, comment_id, text, key):
-        return self.send(account, comment_id, text, key)
+    def private_reply(self, account, comment_id, text, key, quick_replies=None):
+        return self.send(account, comment_id, text, key, quick_replies)
+
+    def comment_reply(self, account, comment_id, text):
+        return Receipt("mock:comment:" + comment_id)
 
 
 class InstagramProvider:
@@ -89,20 +93,43 @@ class InstagramProvider:
         except (KeyError, ValueError, TypeError):
             raise DeliveryRejected("comment_timestamp_unavailable") from None
 
-    def send(self, account: Account, recipient: str, text: str, key: str) -> Receipt:
-        return self._send(account, {"id": recipient}, text)
+    def send(self, account: Account, recipient: str, text: str, key: str, quick_replies=None) -> Receipt:
+        return self._send(account, {"id": recipient}, text, quick_replies)
 
-    def private_reply(self, account: Account, comment_id: str, text: str, key: str) -> Receipt:
-        return self._send(account, {"comment_id": comment_id}, text)
+    def private_reply(self, account: Account, comment_id: str, text: str, key: str, quick_replies=None) -> Receipt:
+        return self._send(account, {"comment_id": comment_id}, text, quick_replies)
 
-    def _send(self, account, recipient, text):
+    def comment_reply(self, account: Account, comment_id: str, text: str) -> Receipt:
+        if not account.credential:
+            raise DeliveryRejected("credentials_missing")
+        try:
+            response = httpx.post(
+                f"https://graph.instagram.com/{settings().meta_api_version}/{comment_id}/replies",
+                headers={"Authorization": "Bearer " + decrypt(account.credential)},
+                json={"message": text},
+                timeout=15,
+            )
+        except httpx.HTTPError:
+            raise DeliveryUnknown("delivery_unknown") from None
+        if not response.is_success:
+            raise DeliveryRejected("provider_rejected")
+        try:
+            payload = response.json()
+            return Receipt(str(payload.get("id") or payload.get("message_id") or ""))
+        except (ValueError, AttributeError):
+            raise DeliveryUnknown("delivery_unknown") from None
+
+    def _send(self, account, recipient, text, quick_replies=None):
         if not account.credential:
             raise DeliveryRejected("credentials_missing")
         try:
             response = httpx.post(
                 f"https://graph.instagram.com/{settings().meta_api_version}/{account.external_id}/messages",
                 headers={"Authorization": "Bearer " + decrypt(account.credential)},
-                json={"recipient": recipient, "message": {"text": text}},
+                json={
+                    "recipient": recipient,
+                    "message": {"text": text, **({"quick_replies": quick_replies} if quick_replies else {})},
+                },
                 timeout=15,
             )
         except httpx.HTTPError:

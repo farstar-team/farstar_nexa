@@ -90,7 +90,9 @@ async def meta(request: Request, db: Session = Depends(get_db)):
             for event in entry.get("messaging", []):
                 message = event.get("message", {})
                 sender = str(event.get("sender", {}).get("id", ""))
-                if not message.get("text") or not message.get("mid") or message.get("is_echo"):
+                quick_reply = message.get("quick_reply") or {}
+                message_text = message.get("text") or quick_reply.get("title") or ""
+                if not message_text or not message.get("mid") or message.get("is_echo"):
                     continue
                 if not sender or sender == account.external_id:
                     continue
@@ -105,8 +107,9 @@ async def meta(request: Request, db: Session = Depends(get_db)):
                     {
                         "account_id": account.id,
                         "sender": sender,
-                        "text": str(message["text"])[:2000],
+                        "text": str(message_text)[:2000],
                         "event_id": str(message["mid"])[:128],
+                        "quick_reply_payload": str(quick_reply.get("payload", ""))[:256],
                         "occurred_at": datetime.fromtimestamp(
                             float(event["timestamp"]) / 1000, UTC
                         ).isoformat(),

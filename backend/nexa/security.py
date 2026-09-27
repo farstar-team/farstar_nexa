@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session as DBSession
 
 from nexa.config import settings
 from nexa.db import get_db, utcnow
-from nexa.models import Audit, OneTimeToken, Session, User, Workspace
+from nexa.models import Audit, OneTimeToken, Session, User, Workspace, WorkspaceMember
 
 hasher = PasswordHasher()
 PERMISSIONS = {"users.read": {"ADMIN", "SUPER_ADMIN"}, "system.manage": {"SUPER_ADMIN"}}
@@ -69,8 +69,15 @@ def rate_limit(key: str, limit: int, seconds: int):
         client.close()
 
 
-def audit(db: DBSession, user_id: str | None, action: str, target: str = "", **detail):
-    db.add(Audit(user_id=user_id, action=action, target=target, detail=detail))
+def audit(
+    db: DBSession,
+    user_id: str | None,
+    action: str,
+    target: str = "",
+    ip_address: str | None = None,
+    **detail,
+):
+    db.add(Audit(user_id=user_id, action=action, target=target, ip_address=ip_address, detail=detail))
 
 
 def current_user(request: Request, db: DBSession = Depends(get_db)) -> User:
@@ -100,7 +107,41 @@ def require(permission: str):
 
 
 def workspace(db: DBSession, user: User) -> Workspace:
-    return db.scalar(select(Workspace).where(Workspace.owner_id == user.id))
+    row = db.scalar(select(Workspace).where(Workspace.owner_id == user.id))
+    if row:
+        return row
+    member = db.scalar(
+        select(WorkspaceMember).where(WorkspaceMember.user_id == user.id, WorkspaceMember.active.is_(True))
+    )
+    if member:
+        row = db.get(Workspace, member.workspace_id)
+    if not row:
+        raise HTTPException(403, "workspace_access_required")
+    return row
+
+
+def workspace_owner(db: DBSession, user: User) -> Workspace:
+    row = db.scalar(select(Workspace).where(Workspace.owner_id == user.id))
+    if not row:
+        raise HTTPException(403, "workspace_owner_required")
+    return row
+
+
+def member_for(db: DBSession, user: User, workspace_id: str) -> WorkspaceMember | None:
+    return db.scalar(
+        select(WorkspaceMember).where(
+            WorkspaceMember.user_id == user.id,
+            WorkspaceMember.workspace_id == workspace_id,
+            WorkspaceMember.active.is_(True),
+        )
+    )
+
+
+def can_access_product(db: DBSession, user: User, workspace_id: str, product_id: str) -> bool:
+    if db.scalar(select(Workspace.owner_id).where(Workspace.id == workspace_id, Workspace.owner_id == user.id)):
+        return True
+    member = member_for(db, user, workspace_id)
+    return bool(member and product_id in (member.product_ids or []))
 
 
 def owned(db: DBSession, model, identity: str, workspace_id: str):

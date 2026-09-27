@@ -1363,6 +1363,43 @@ details.pretty-details summary::-webkit-details-marker { display: none; }
 details.pretty-details summary::after { content: "⌄"; color: var(--muted); transition: transform .15s; }
 details.pretty-details[open] summary::after { transform: rotate(180deg); }
 details.pretty-details > div { border-top: 1px solid var(--line); padding: 15px 16px; }
+.automation-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+.preset-button { font-size: 11px; }
+.action-card { position: relative; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: 18px; margin: 14px 0; box-shadow: 0 10px 26px #173b310a; }
+.action-card-header { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 12px; }
+.action-card-header h3 { margin: 4px 0 0; font-size: 14px; }
+.action-card-tools { display: flex; align-items: center; gap: 7px; }
+.action-remove { color: #b35e5e; }
+.action-remove:hover { background: #f8e4e2; color: #9f3e3e; }
+.action-order-tools { margin-top: 12px; }
+.action-empty { margin: 15px 0; }
+.variable-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.variable-chip { display: inline-flex; align-items: center; gap: 7px; }
+.variable-chip code, .variable-guide code { direction: ltr; font: 10px ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--accent); background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 3px 5px; }
+.variable-guide { display: grid; gap: 7px; margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--line); }
+.variable-guide strong { font-size: 11px; }
+.variable-guide div { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 10px; }
+.faq-builder { display: grid; gap: 12px; margin-top: 14px; }
+.faq-builder-row { position: relative; display: grid; grid-template-columns: 1fr 1.5fr auto; align-items: end; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--bg); }
+.faq-builder-row .action-remove { margin-bottom: 8px; }
+.team-management { margin-top: 1.5rem; }
+.team-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.team-heading h2 { margin: 0; }
+.muted { color: var(--muted); }
+.team-form-card { margin-bottom: 1rem; }
+.team-form-title { display: flex; align-items: center; gap: .5rem; font-weight: 700; margin-bottom: 1rem; }
+.compact-grid { gap: 1rem; }
+.team-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.team-member-card { display: flex; flex-direction: column; gap: .9rem; }
+.team-member-top { display: flex; align-items: center; gap: .7rem; }
+.team-member-top > div:nth-child(2) { display: flex; flex-direction: column; gap: .2rem; flex: 1; }
+.team-member-top span[dir="ltr"] { color: var(--muted); font-size: .84rem; }
+.team-avatar { display: grid; place-items: center; width: 2.3rem; height: 2.3rem; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+.team-products { display: flex; gap: .45rem; align-items: flex-start; margin: 0; color: var(--muted); font-size: .9rem; }
+.team-member-actions { display: flex; justify-content: flex-end; }
+.modal-backdrop { position: fixed; inset: 0; background: rgb(15 23 42 / .45); display: grid; place-items: center; z-index: 20; padding: 1rem; }
+.team-edit-modal { width: min(520px, 100%); max-height: 90vh; overflow: auto; }
+@media (max-width: 640px) { .team-heading { align-items: flex-start; flex-direction: column; } }
 .initial-loading {
   min-height: 100vh;
   display: flex;

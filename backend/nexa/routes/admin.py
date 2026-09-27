@@ -327,7 +327,7 @@ def status(user: User = Depends(require("system.manage")), db: Session = Depends
 @router.get("/audit")
 def audit_log(user: User = Depends(require("system.manage")), db: Session = Depends(get_db)):
     return [
-        serialize(row, "id user_id action target detail created_at")
+        serialize(row, "id user_id action target ip_address detail created_at")
         for row in db.scalars(select(Audit).order_by(Audit.created_at.desc()).limit(200))
     ]
 

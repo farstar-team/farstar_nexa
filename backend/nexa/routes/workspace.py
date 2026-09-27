@@ -32,7 +32,7 @@ from nexa.models import (
     TelegramLink,
     User,
 )
-from nexa.security import audit, current_user, issue_token, owned, rate_limit, workspace
+from nexa.security import audit, can_access_product, current_user, issue_token, owned, rate_limit, workspace
 
 router = APIRouter(prefix="/api", tags=["workspace"])
 
@@ -161,12 +161,14 @@ class RuleInput(BaseModel):
         return [k.strip() for k in value]
 
 
-def rule_values(data, db, ws):
+def rule_values(data, db, ws, user):
     account = owned(db, Account, data.account_id, ws.id)
     if not account.active:
         raise HTTPException(400, "account_inactive")
     if data.product_id:
         owned(db, Product, data.product_id, ws.id)
+        if not can_access_product(db, user, ws.id, data.product_id):
+            raise HTTPException(403, "product_access_required")
     for identity in data.media_ids:
         media = owned(db, InstagramMedia, identity, ws.id)
         if media.account_id != account.id:
@@ -197,7 +199,7 @@ def create_rule(data: RuleInput, user: User = Depends(current_user), db: Session
     account = owned(db, Account, data.account_id, ws.id)
     if not account.active:
         raise HTTPException(400, "account_inactive")
-    row = Automation(workspace_id=ws.id, **rule_values(data, db, ws))
+    row = Automation(workspace_id=ws.id, **rule_values(data, db, ws, user))
     db.add(row)
     db.flush()
     audit(db, user.id, "automation.created", row.id)
@@ -233,7 +235,7 @@ def edit_rule(
     ws = workspace(db, user)
     row = owned(db, Automation, identity, ws.id)
     owned(db, Account, data.account_id, ws.id)
-    for key, value in rule_values(data, db, ws).items():
+    for key, value in rule_values(data, db, ws, user).items():
         setattr(row, key, value)
     audit(db, user.id, "automation.edited", row.id)
     db.commit()
@@ -372,10 +374,20 @@ def executions(
 
 @router.get("/activity")
 def activity(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    useful = {
+        "auth.login", "auth.logout", "auth.register", "auth.google_login", "auth.google_register",
+        "auth.google_linked", "telegram.link_requested", "telegram.unlinked", "telegram.mini_app_login",
+        "instagram.connected", "product.saved", "product.deleted", "automation.created", "automation.edited",
+        "automation.toggle", "support.ticket_created", "support.message_added", "team.member_created",
+        "team.member_updated",
+    }
     return [
         serialize(row, "id action target created_at")
         for row in db.scalars(
-            select(Audit).where(Audit.user_id == user.id).order_by(Audit.created_at.desc()).limit(100)
+            select(Audit)
+            .where(Audit.user_id == user.id, Audit.action.in_(useful))
+            .order_by(Audit.created_at.desc())
+            .limit(100)
         )
     ]
 
