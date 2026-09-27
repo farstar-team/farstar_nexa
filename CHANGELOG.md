@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.11] - 2026-09-27
+
+- Replaced live chat with a configurable support contact page and a redesigned ticket center.
+- Added ticket codes, searchable ticket lists, clear waiting statuses, safe closing, and closed-ticket locking.
+- Added 20-item pagination to workspace and administration lists.
+- Refreshed public and panel headers/footers with support and trust areas.
+
 ## [0.5.9] - 2026-09-27
 
 - Fixed the release safety-backup schema check so updates can migrate forward from the currently installed database schema without weakening restore validation.

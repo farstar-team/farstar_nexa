@@ -81,13 +81,19 @@ def dashboard(user: User = Depends(current_user), db: Session = Depends(get_db))
 
 
 @router.get("/accounts")
-def accounts(user: User = Depends(current_user), db: Session = Depends(get_db)):
+def accounts(
+    offset: int = Query(default=0, ge=0),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
     return [
         serialize(row, ACCOUNT_FIELDS)
         for row in db.scalars(
             select(Account)
             .where(Account.workspace_id == workspace(db, user).id)
             .order_by(Account.created_at.desc())
+            .offset(offset)
+            .limit(20)
         )
     ]
 
@@ -182,13 +188,19 @@ def rule_values(data, db, ws, user):
 
 
 @router.get("/automations")
-def rules(user: User = Depends(current_user), db: Session = Depends(get_db)):
+def rules(
+    offset: int = Query(default=0, ge=0),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
     return [
         serialize(row, RULE_FIELDS)
         for row in db.scalars(
             select(Automation)
             .where(Automation.workspace_id == workspace(db, user).id)
             .order_by(Automation.priority.desc())
+            .offset(offset)
+            .limit(20)
         )
     ]
 
@@ -314,7 +326,7 @@ def conversations(
             .where(Conversation.workspace_id == workspace(db, user).id)
             .order_by(Conversation.created_at.desc())
             .offset(offset)
-            .limit(100)
+            .limit(20)
         )
     ]
 
@@ -327,7 +339,7 @@ def messages(identity: str, user: User = Depends(current_user), db: Session = De
             select(Message)
             .where(Message.conversation_id == identity)
             .order_by(Message.created_at.desc())
-            .limit(200)
+            .limit(20)
         )
     )
     return [serialize(row, "id direction text status created_at") for row in reversed(rows)]
@@ -345,7 +357,7 @@ def executions(
         .where(Execution.workspace_id == workspace(db, user).id)
         .order_by(Execution.created_at.desc())
         .offset(offset)
-        .limit(100)
+        .limit(20)
     ).all()
     identities = [item[0].id for item in rows]
     actions = {identity: [] for identity in identities}
@@ -373,7 +385,11 @@ def executions(
 
 
 @router.get("/activity")
-def activity(user: User = Depends(current_user), db: Session = Depends(get_db)):
+def activity(
+    offset: int = Query(default=0, ge=0),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
     useful = {
         "auth.login", "auth.logout", "auth.register", "auth.google_login", "auth.google_register",
         "auth.google_linked", "telegram.link_requested", "telegram.unlinked", "telegram.mini_app_login",
@@ -387,7 +403,8 @@ def activity(user: User = Depends(current_user), db: Session = Depends(get_db)):
             select(Audit)
             .where(Audit.user_id == user.id, Audit.action.in_(useful))
             .order_by(Audit.created_at.desc())
-            .limit(100)
+            .offset(offset)
+            .limit(20)
         )
     ]
 

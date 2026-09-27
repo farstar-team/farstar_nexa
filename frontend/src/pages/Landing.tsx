@@ -41,7 +41,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       </section>
       <section className="landing-how"><div><span className="eyebrow">شروع ساده</span><h2>در سه گام آماده فروش شوید</h2></div><ol><li><b>۱</b><span><strong>حساب را متصل کنید</strong><small>اتصال Instagram را از پنل مدیریت کنید.</small></span></li><li><b>۲</b><span><strong>محصول و قیمت را بسازید</strong><small>منبع نرخ و روش محاسبه را خودتان انتخاب کنید.</small></span></li><li><b>۳</b><span><strong>اتوماسیون را فعال کنید</strong><small>پاسخ‌ها را تست کنید و بعد به فروش واقعی بسپارید.</small></span></li></ol></section>
       <section className="landing-bottom"><h2>وقت آن است پاسخ‌گویی فروش شما منظم شود.</h2><button onClick={onStart}>ورود و شروع <ArrowLeft size={18} /></button></section>
-      <footer className="landing-footer"><span>{brand.nameFa}</span><span>{brand.tagline}</span></footer>
+      <footer className="landing-footer"><div className="public-footer-brand"><img src={brand.mark} alt="" /><div><strong>{brand.nameFa}</strong><small>{brand.tagline}</small></div></div><div className="public-footer-links"><a href="/">راهنمای استفاده</a><a href="/?auth=1">ورود به پنل</a><span className="trust-badge">امن و آماده رشد</span></div></footer>
     </main>
   );
 }

@@ -62,7 +62,7 @@ def products(user: User = Depends(current_user), db: Session = Depends(get_db), 
         .where(Product.workspace_id == workspace(db, user).id)
         .order_by(Product.created_at.desc())
         .offset(offset)
-        .limit(100)
+        .limit(20)
     )
     result = []
     for row, linked_media, linked_automations in rows:
@@ -183,7 +183,7 @@ def media(
             .where(InstagramMedia.account_id == account_id)
             .order_by(InstagramMedia.published_at.desc(), InstagramMedia.id)
             .offset(offset)
-            .limit(100)
+            .limit(20)
         )
     ]
 
@@ -290,7 +290,7 @@ def leads(user: User = Depends(current_user), db: Session = Depends(get_db), off
             .where(Lead.workspace_id == workspace(db, user).id)
             .order_by(Lead.last_interaction.desc())
             .offset(offset)
-            .limit(100)
+            .limit(20)
         )
     ]
 

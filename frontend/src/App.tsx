@@ -9,6 +9,7 @@ import {
   House,
   Inbox as InboxIcon,
   LifeBuoy,
+  MessageSquare,
   LogOut,
   Menu,
   Moon,
@@ -39,6 +40,7 @@ import Products from "./pages/Products";
 import Media from "./pages/Media";
 import Leads from "./pages/Leads";
 import Support from "./pages/Support";
+import SupportContacts from "./pages/SupportContacts";
 import Notifications from "./pages/Notifications";
 import TelegramMiniApp from "./pages/TelegramMiniApp";
 import Guide from "./pages/Guide";
@@ -57,6 +59,7 @@ const navigation = [
   { key: "executions", icon: Workflow },
   { key: "activity", icon: Activity },
   { key: "support", icon: LifeBuoy },
+  { key: "support-tickets", icon: MessageSquare },
   { key: "settings", icon: SettingsIcon },
 ];
 export default function App() {
@@ -154,6 +157,9 @@ function PanelApp() {
       content = <History key={page} page={page} user={user} />;
       break;
     case "support":
+      content = <SupportContacts />;
+      break;
+    case "support-tickets":
       content = <Support user={user} />;
       break;
     case "notifications":
@@ -315,8 +321,9 @@ function PanelApp() {
           <PageGuide page={page} />
         </main>
         <footer className="main-footer">
-          <span>{brand.nameFa}</span>
-          <span>{brand.tagline}</span>
+          <div className="footer-brand"><img src={brand.mark} alt="" /><div><strong>{brand.nameFa}</strong><small>{brand.tagline}</small></div></div>
+          <div className="footer-links"><a href="#support" onClick={() => navigate("support")}>پشتیبانی</a><a href="#support-tickets" onClick={() => navigate("support-tickets")}>تیکت‌ها</a><a href="/">راهنمای استفاده</a></div>
+          <span className="footer-status"><i /> سرویس فعال</span>
         </footer>
       </div>
     </div>

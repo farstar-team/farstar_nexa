@@ -15,6 +15,30 @@ def test_support_ticket_and_reply(signed):
     assert reply.status_code == 201
 
 
+def test_support_ticket_code_states_and_close(signed):
+    created = signed.post(
+        "/api/support/tickets",
+        json={"subject": "پیگیری سفارش", "message": "لطفاً راهنمایی کنید"},
+    )
+    assert created.status_code == 201
+    ticket = created.json()
+    assert ticket["ticket_code"].startswith("NX-")
+    assert ticket["status"] == "waiting_support"
+    assert signed.get("/api/support/tickets?q=" + ticket["ticket_code"]).json()[0]["id"] == ticket["id"]
+    second = signed.post(
+        f"/api/support/tickets/{ticket['id']}/messages", json={"body": "هنوز منتظر پاسخ هستم"}
+    )
+    assert second.status_code == 201
+    assert signed.get(f"/api/support/tickets/{ticket['id']}").json()["status"] == "waiting_support"
+    closed = signed.patch(f"/api/support/tickets/{ticket['id']}", json={"status": "closed"})
+    assert closed.status_code == 200
+    assert closed.json()["status"] == "closed"
+    blocked = signed.post(
+        f"/api/support/tickets/{ticket['id']}/messages", json={"body": "پیام جدید"}
+    )
+    assert blocked.status_code == 409
+
+
 def test_public_content_can_be_edited_by_owner(owner):
     assert owner.get("/api/content").status_code == 200
     result = owner.put("/api/admin/content", json={"values": {"landing.cta": "شروع امن"}})

@@ -1,6 +1,7 @@
+import secrets
 from datetime import UTC
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -15,7 +16,6 @@ router = APIRouter(prefix="/api/support", tags=["support"])
 class NewTicket(BaseModel):
     subject: str = Field(min_length=3, max_length=160)
     message: str = Field(min_length=1, max_length=5000)
-    channel: str = Field(default="ticket", pattern="^(ticket|live_chat)$")
 
 
 class NewMessage(BaseModel):
@@ -23,7 +23,18 @@ class NewMessage(BaseModel):
 
 
 class TicketStatus(BaseModel):
-    status: str = Field(pattern="^(open|pending|resolved|closed)$")
+    status: str = Field(pattern="^(waiting_support|waiting_user|waiting_new_reply|closed)$")
+
+
+STATUS_ALIASES = {"open": "waiting_support", "pending": "waiting_user", "resolved": "closed"}
+
+
+def new_ticket_code(db: Session) -> str:
+    for _ in range(10):
+        value = "NX-" + secrets.token_hex(5).upper()
+        if not db.scalar(select(SupportTicket.id).where(SupportTicket.ticket_code == value)):
+            return value
+    raise HTTPException(503, "ticket_code_unavailable")
 
 
 def ticket_visible(db: Session, ticket_id: str, user: User) -> SupportTicket:
@@ -45,8 +56,9 @@ def message_dict(row: SupportMessage) -> dict:
 def ticket_dict(row: SupportTicket, include_messages=False) -> dict:
     result = {
         "id": row.id,
+        "ticket_code": row.ticket_code,
         "subject": row.subject,
-        "status": row.status,
+        "status": STATUS_ALIASES.get(row.status, row.status),
         "priority": row.priority,
         "channel": row.channel,
         "user_id": row.user_id,
@@ -69,11 +81,19 @@ def load_messages(db: Session, ticket: SupportTicket):
 
 
 @router.get("/tickets")
-def tickets(user: User = Depends(current_user), db: Session = Depends(get_db)):
+def tickets(
+    q: str = Query(default="", max_length=80),
+    offset: int = Query(default=0, ge=0),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
     query = select(SupportTicket)
     if user.role not in {"ADMIN", "SUPER_ADMIN"}:
         query = query.where(SupportTicket.user_id == user.id)
-    rows = db.scalars(query.order_by(SupportTicket.updated_at.desc()).limit(100)).all()
+    if q.strip():
+        term = f"%{q.strip()}%"
+        query = query.where((SupportTicket.ticket_code.ilike(term)) | (SupportTicket.subject.ilike(term)))
+    rows = db.scalars(query.order_by(SupportTicket.updated_at.desc()).offset(offset).limit(20)).all()
     return [ticket_dict(row) for row in rows]
 
 
@@ -82,8 +102,10 @@ def create_ticket(data: NewTicket, user: User = Depends(current_user), db: Sessi
     row = SupportTicket(
         workspace_id=workspace(db, user).id,
         user_id=user.id,
+        ticket_code=new_ticket_code(db),
         subject=data.subject.strip(),
-        channel=data.channel,
+        channel="ticket",
+        status="waiting_support",
     )
     db.add(row)
     db.flush()
@@ -114,9 +136,14 @@ def add_message(
     item = SupportMessage(ticket_id=row.id, author_id=user.id, author_role=role, body=data.body.strip())
     row.updated_at = utcnow()
     if role == "admin":
-        row.status = "pending"
+        row.status = "waiting_user"
     else:
-        row.status = "open"
+        prior_admin = db.scalar(
+            select(SupportMessage.id).where(
+                SupportMessage.ticket_id == row.id, SupportMessage.author_role == "admin"
+            )
+        )
+        row.status = "waiting_new_reply" if prior_admin else "waiting_support"
     db.add(item)
     audit(db, user.id, "support.message_added", row.id, role=role)
     db.commit()
@@ -130,9 +157,13 @@ def update_ticket(
     user: User = Depends(current_user),
     db: Session = Depends(get_db),
 ):
-    if user.role not in {"ADMIN", "SUPER_ADMIN"}:
+    is_admin = user.role in {"ADMIN", "SUPER_ADMIN"}
+    if not is_admin and data.status != "closed":
         raise HTTPException(403, "forbidden")
     row = ticket_visible(db, ticket_id, user)
+    current = STATUS_ALIASES.get(row.status, row.status)
+    if current == "closed" and data.status != "closed":
+        raise HTTPException(409, "ticket_closed")
     row.status = data.status
     row.updated_at = utcnow()
     audit(db, user.id, "support.ticket_status", row.id, status=data.status)

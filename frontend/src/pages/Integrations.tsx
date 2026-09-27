@@ -18,9 +18,10 @@ import { t } from "../i18n";
 
 export default function Integrations({ config }: { config: Config }) {
   const cache = useQueryClient();
+  const [page, setPage] = useState(0);
   const query = useQuery({
-    queryKey: ["accounts"],
-    queryFn: () => api<Account[]>("/accounts"),
+    queryKey: ["accounts", page],
+    queryFn: () => api<Account[]>(`/accounts?offset=${page * 20}`),
   });
   const [adding, setAdding] = useState(false);
   const [disconnect, setDisconnect] = useState<string>();
@@ -101,6 +102,7 @@ export default function Integrations({ config }: { config: Config }) {
           ))}
         </div>
       )}
+      <div className="pagination"><button disabled={!page} onClick={() => setPage(Math.max(0, page - 1))}>قبلی</button><span>{t("page")} {page + 1}</span><button disabled={(query.data?.length ?? 0) < 20} onClick={() => setPage(page + 1)}>بعدی</button></div>
       {adding && (
         <Modal title="newAccount" close={() => setAdding(false)}>
           <Form

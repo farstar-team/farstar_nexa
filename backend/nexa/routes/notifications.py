@@ -1,6 +1,6 @@
 from datetime import UTC
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -24,12 +24,17 @@ def notification_dict(row: Notification) -> dict:
 
 
 @router.get("")
-def notifications(user: User = Depends(current_user), db: Session = Depends(get_db)):
+def notifications(
+    offset: int = Query(default=0, ge=0),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
     rows = db.scalars(
         select(Notification)
         .where(Notification.user_id == user.id, Notification.channel == "panel")
         .order_by(Notification.created_at.desc())
-        .limit(100)
+        .offset(offset)
+        .limit(20)
     ).all()
     return [notification_dict(row) for row in rows]
 

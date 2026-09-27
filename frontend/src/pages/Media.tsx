@@ -196,13 +196,13 @@ export default function Media() {
           <div className="pagination">
             <button
               disabled={!offset}
-              onClick={() => setOffset(Math.max(0, offset - 100))}
+              onClick={() => setOffset(Math.max(0, offset - 20))}
             >
               قبلی
             </button>
             <button
-              disabled={(media.data?.length ?? 0) < 100}
-              onClick={() => setOffset(offset + 100)}
+              disabled={(media.data?.length ?? 0) < 20}
+              onClick={() => setOffset(offset + 20)}
             >
               بعدی
             </button>

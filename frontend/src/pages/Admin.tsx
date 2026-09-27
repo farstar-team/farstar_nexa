@@ -75,6 +75,8 @@ export default function Admin({ user }: { user: User }) {
   }>();
   const [editing, setEditing] = useState<User>();
   const [search, setSearch] = useState("");
+  const [usersPage, setUsersPage] = useState(0);
+  const [auditPage, setAuditPage] = useState(0);
   const cache = useQueryClient();
   const status = useQuery({
     queryKey: ["admin-status"],
@@ -83,8 +85,8 @@ export default function Admin({ user }: { user: User }) {
     refetchInterval: 10000,
   });
   const users = useQuery({
-    queryKey: ["admin-users", search],
-    queryFn: () => api<User[]>("/admin/users?q=" + encodeURIComponent(search)),
+    queryKey: ["admin-users", search, usersPage],
+    queryFn: () => api<User[]>(`/admin/users?q=${encodeURIComponent(search)}&offset=${usersPage * 20}`),
     enabled: tab === "users",
   });
   const backups = useQuery({
@@ -100,8 +102,8 @@ export default function Admin({ user }: { user: User }) {
     refetchInterval: 3000,
   });
   const audit = useQuery({
-    queryKey: ["admin-audit"],
-    queryFn: () => api<Activity[]>("/admin/audit"),
+    queryKey: ["admin-audit", auditPage],
+    queryFn: () => api<Activity[]>(`/admin/audit?offset=${auditPage * 20}`),
     enabled: owner && tab === "audit",
   });
   const request = (action: string, argument = "") =>
@@ -225,7 +227,7 @@ export default function Admin({ user }: { user: User }) {
               aria-label={t("searchUsers")}
               placeholder={t("searchUsers")}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setUsersPage(0); }}
             />
           </div>
           <ErrorNotice error={users.error} />
@@ -274,6 +276,7 @@ export default function Admin({ user }: { user: User }) {
               </table>
             </div>
           )}
+          <div className="pagination"><button disabled={!usersPage} onClick={() => setUsersPage(Math.max(0, usersPage - 1))}>قبلی</button><span>{t("page")} {usersPage + 1}</span><button disabled={(users.data?.length ?? 0) < 20} onClick={() => setUsersPage(usersPage + 1)}>بعدی</button></div>
         </section>
       )}
       {tab === "backups" && (
@@ -471,6 +474,7 @@ export default function Admin({ user }: { user: User }) {
               </table>
             </div>
           )}
+          <div className="pagination"><button disabled={!auditPage} onClick={() => setAuditPage(Math.max(0, auditPage - 1))}>قبلی</button><span>{t("page")} {auditPage + 1}</span><button disabled={(audit.data?.length ?? 0) < 20} onClick={() => setAuditPage(auditPage + 1)}>بعدی</button></div>
         </section>
       )}
       {owner && tab === "content" && <ContentEditor />}

@@ -242,7 +242,7 @@ def users(
     if role:
         query = query.where(User.role == role)
     return [
-        user_dict(row) for row in db.scalars(query.order_by(User.created_at.desc()).offset(offset).limit(100))
+        user_dict(row) for row in db.scalars(query.order_by(User.created_at.desc()).offset(offset).limit(20))
     ]
 
 
@@ -325,10 +325,14 @@ def status(user: User = Depends(require("system.manage")), db: Session = Depends
 
 
 @router.get("/audit")
-def audit_log(user: User = Depends(require("system.manage")), db: Session = Depends(get_db)):
+def audit_log(
+    offset: int = Query(0, ge=0),
+    user: User = Depends(require("system.manage")),
+    db: Session = Depends(get_db),
+):
     return [
         serialize(row, "id user_id action target ip_address detail created_at")
-        for row in db.scalars(select(Audit).order_by(Audit.created_at.desc()).limit(200))
+        for row in db.scalars(select(Audit).order_by(Audit.created_at.desc()).offset(offset).limit(20))
     ]
 
 

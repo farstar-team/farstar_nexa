@@ -14,7 +14,12 @@ CONTENT_DEFAULTS = {
     "landing.cta": "شروع کار با Nexa",
     "landing.features_title": "همه چیز برای فروش اجتماعی در یکجا",
     "support.title": "پشتیبانی فاراستار Nexa",
-    "support.subtitle": "سؤال خود را ثبت کنید یا با تیم پشتیبانی گفت‌وگو کنید.",
+    "support.subtitle": "از راه ارتباطی دلخواه با تیم پشتیبانی در تماس باشید.",
+    "support.telegram": "",
+    "support.instagram": "",
+    "support.channel": "",
+    "support.email": "",
+    "support.hours": "شنبه تا چهارشنبه، ساعت ۹ تا ۱۸",
 }
 
 

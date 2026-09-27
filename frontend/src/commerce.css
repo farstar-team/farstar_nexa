@@ -210,7 +210,15 @@
 .landing-how li > b { color: var(--accent); font-size: 1.6rem; } .landing-how li span { display: grid; gap: 5px; } .landing-how li small { color: var(--muted); }
 .landing-bottom { border-radius: 22px; padding-block: 45px; margin-bottom: 40px; color: white; background: linear-gradient(120deg, #334ca8, #6b55c5); display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .landing-bottom h2 { margin: 0; } .landing-bottom button { background: white; color: #334ca8; }
-.landing-footer { display: flex; justify-content: space-between; color: var(--muted); padding-block: 24px 35px; font-size: .85rem; }
+.landing-footer { display: flex; justify-content: space-between; align-items: center; gap: 18px; color: var(--muted); padding-block: 24px 35px; font-size: .85rem; border-top: 1px solid var(--line); }
+.public-footer-brand, .public-footer-links { display: flex; align-items: center; gap: 12px; }
+.public-footer-brand img { width: 30px; height: 30px; }
+.public-footer-brand div { display: grid; gap: 2px; }
+.public-footer-brand strong { color: var(--text); }
+.public-footer-brand small { color: var(--muted); font-size: .65rem; direction: ltr; }
+.public-footer-links a { color: var(--muted); }
+.public-footer-links a:hover { color: var(--accent); }
+.trust-badge { padding: 7px 10px; border: 1px solid #a8cbb7; border-radius: 20px; color: var(--accent); background: var(--soft); font-size: .72rem; }
 @media (max-width: 850px) { .landing-hero { grid-template-columns: 1fr; padding-top: 55px; } .landing-orbit { order: -1; max-width: 350px; } .landing-features { grid-template-columns: repeat(2, 1fr); } .landing-how { grid-template-columns: 1fr; gap: 10px; } }
 @media (max-width: 560px) { .landing-nav, .landing-hero, .landing-section, .landing-how, .landing-bottom, .landing-footer { padding-inline: 18px; } .landing-copy h1 { font-size: 2.15rem; } .landing-copy p { font-size: 1rem; } .landing-features { grid-template-columns: 1fr; } .landing-bottom, .landing-footer { flex-direction: column; align-items: flex-start; } .landing-bottom { margin-inline: 18px; } .orbit-chip { font-size: .7rem; padding: 8px 10px; } }
 .message-preview {

@@ -242,6 +242,7 @@ class SupportTicket(Identity, Base):
     __tablename__ = "support_tickets"
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    ticket_code: Mapped[str] = mapped_column(String(24), unique=True, index=True)
     subject: Mapped[str] = mapped_column(String(160))
     status: Mapped[str] = mapped_column(String(24), default="open", index=True)
     priority: Mapped[str] = mapped_column(String(16), default="normal")

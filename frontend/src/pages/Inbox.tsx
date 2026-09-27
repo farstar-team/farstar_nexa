@@ -8,9 +8,10 @@ import { date, t } from "../i18n";
 
 export default function Inbox({ user }: { user: User }) {
   const [selected, setSelected] = useState<string>();
+  const [page, setPage] = useState(0);
   const conversations = useQuery({
-    queryKey: ["conversations"],
-    queryFn: () => api<Conversation[]>("/conversations"),
+    queryKey: ["conversations", page],
+    queryFn: () => api<Conversation[]>(`/conversations?offset=${page * 20}`),
     refetchInterval: 4000,
   });
   const messages = useQuery({
@@ -47,6 +48,7 @@ export default function Inbox({ user }: { user: User }) {
               </button>
             ))
           )}
+          <div className="pagination"><button disabled={!page} onClick={() => setPage(Math.max(0, page - 1))}>قبلی</button><span>{t("page")} {page + 1}</span><button disabled={(conversations.data?.length ?? 0) < 20} onClick={() => setPage(page + 1)}>بعدی</button></div>
         </aside>
         <section className="message-panel">
           {!selected ? (

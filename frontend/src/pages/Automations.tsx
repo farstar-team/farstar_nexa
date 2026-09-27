@@ -20,13 +20,14 @@ import FlowEditor, { DryRun } from "./FlowEditor";
 export default function Automations(_props: { config: Config }) {
   void _props;
   const cache = useQueryClient();
+  const [page, setPage] = useState(0);
   const accounts = useQuery({
     queryKey: ["accounts"],
     queryFn: () => api<Account[]>("/accounts"),
   });
   const rules = useQuery({
-    queryKey: ["automations"],
-    queryFn: () => api<Rule[]>("/automations"),
+    queryKey: ["automations", page],
+    queryFn: () => api<Rule[]>(page ? `/automations?offset=${page * 20}` : "/automations"),
   });
   const [edit, setEdit] = useState<Rule | null | undefined>();
   const [toggle, setToggle] = useState<Rule>();
@@ -104,6 +105,7 @@ export default function Automations(_props: { config: Config }) {
           ))}
         </div>
       )}
+      <div className="pagination"><button disabled={!page} onClick={() => setPage(Math.max(0, page - 1))}>قبلی</button><span>{t("page")} {page + 1}</span><button disabled={(rules.data?.length ?? 0) < 20} onClick={() => setPage(page + 1)}>بعدی</button></div>
       {flowEdit !== undefined && (
         <Modal title="ساخت اتوماسیون" close={() => setFlowEdit(undefined)}>
           <FlowEditor
