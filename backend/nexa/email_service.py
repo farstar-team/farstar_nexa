@@ -8,6 +8,7 @@ content or credentials.
 import smtplib
 import ssl
 from email.message import EmailMessage
+from email.utils import formatdate, make_msgid
 
 from nexa.integration_config import integration_settings
 
@@ -23,6 +24,8 @@ def send_email(to: str, subject: str, body: str) -> None:
         raise RuntimeError("email_not_configured")
     message = EmailMessage()
     message["From"], message["To"], message["Subject"] = config.smtp_from, to, subject
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = make_msgid()
     message.set_content(body)
     security = config.smtp_security.lower().strip()
     context = ssl.create_default_context()

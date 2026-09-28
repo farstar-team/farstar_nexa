@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.14] - 2026-09-28
+
+- Added standard `Date` and `Message-ID` headers to outgoing email so the mail server accepts application notifications.
+
 ## [0.5.13] - 2026-09-28
 
 - Removed the public GitHub repository link from the panel footer.
