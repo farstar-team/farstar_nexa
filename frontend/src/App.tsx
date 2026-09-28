@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
-  ArrowUpLeft,
   Bell,
   ChevronLeft,
   FlaskConical,
@@ -242,10 +241,7 @@ function PanelApp() {
           </div>
         )}
         <div className="sidebar-bottom">
-          <a href={brand.github} target="_blank" rel="noreferrer">
-            {brand.tagline}
-            <ArrowUpLeft size={16} />
-          </a>
+          <span className="brand-tagline">{brand.tagline}</span>
           <small>v{config.data.version}</small>
         </div>
       </aside>

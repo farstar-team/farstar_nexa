@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.13] - 2026-09-28
+
+- Removed the public GitHub repository link from the panel footer.
+
 ## [0.5.12] - 2026-09-27
 
 - Made configured support handles open the correct Telegram, Instagram, channel, or email destination automatically.

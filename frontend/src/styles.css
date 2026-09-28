@@ -251,7 +251,7 @@ code {
   font-size: 11px;
   direction: ltr;
 }
-.sidebar-bottom a {
+.sidebar-bottom .brand-tagline {
   display: flex;
   align-items: center;
   justify-content: space-between;
