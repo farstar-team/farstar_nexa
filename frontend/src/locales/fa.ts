@@ -4,6 +4,7 @@ export const fa: Record<string, string> = {
   meta_app_id: "شناسه برنامه Instagram",
   meta_app_secret: "رمز برنامه Instagram",
   meta_verify_token: "توکن تأیید وب‌هوک Meta",
+  boxapi_login_url: "لینک ورود Instagram در Sendbox",
   boxapi_api_key: "توکن API دایرکت BoxAPI",
   boxapi_webhook_secret: "رمز Webhook دایرکت BoxAPI",
   telegram_bot_token: "توکن ربات تلگرام",
@@ -101,7 +102,7 @@ export const fa: Record<string, string> = {
   disconnect: "قطع اتصال",
   integrationsSub: "حساب‌های ارتباطی خود را به فضای کاری نکسا متصل کنید.",
   instagram: "اینستاگرام",
-  instagramDescription: "دریافت پیام و پاسخ خودکار از طریق API رسمی Meta.",
+  instagramDescription: "دریافت پیام و پاسخ خودکار Instagram از طریق Sendbox.",
   connectInstagram: "اتصال حساب اینستاگرام",
   officialConnection: "اتصال رسمی",
   mockConnection: "اتصال آزمایشی",
@@ -109,7 +110,7 @@ export const fa: Record<string, string> = {
   account: "حساب",
   provider: "سرویس",
   prerequisites:
-    "اتصال واقعی به تنظیمات برنامه Meta و مجوزهای تأییدشده نیاز دارد.",
+    "مدیر سیستم باید لینک ورود Sendbox و اطلاعات دسترسی را در تنظیمات اتصال‌ها ثبت کرده باشد.",
   automationsSub:
     "یک بار پاسخ را تنظیم کنید؛ هر پیام مناسب، پاسخ خودش را می‌گیرد.",
   keywords: "کلیدواژه‌ها",
@@ -308,6 +309,7 @@ export const fa: Record<string, string> = {
   rate_limited: "تعداد تلاش‌ها زیاد است. چند دقیقه دیگر امتحان کنید.",
   temporarily_unavailable: "سرویس موقتاً در دسترس نیست.",
   meta_not_configured: "اتصال اینستاگرام هنوز توسط مدیر سیستم فعال نشده است.",
+  boxapi_not_configured: "اتصال Instagram هنوز توسط مدیر سیستم فعال نشده است.",
   integrationUrls: "آدرس‌های اتصال سرویس‌ها",
   integrationUrlsHint:
     "این آدرس‌ها از دامنه فعلی سیستم ساخته می‌شوند. پس از تغییر دامنه، آدرس‌های ثبت‌شده در Meta را هم به‌روزرسانی کنید.",

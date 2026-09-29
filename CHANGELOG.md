@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.17] - 2026-09-29
+
+- Added the Sendbox Instagram login action to the Connections page and made its administrator-configured login URL available through a protected API route.
+
 ## [0.5.16] - 2026-09-29
 
 - Made the BoxAPI service base URL configurable and aligned the default with the current Sendbox API endpoint.

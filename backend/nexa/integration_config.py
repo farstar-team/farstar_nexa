@@ -9,6 +9,7 @@ FIELDS = {
     "meta_app_id",
     "meta_app_secret",
     "meta_verify_token",
+    "boxapi_login_url",
     "boxapi_api_key",
     "boxapi_webhook_secret",
     "telegram_bot_token",

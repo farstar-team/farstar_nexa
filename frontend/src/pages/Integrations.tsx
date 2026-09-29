@@ -43,7 +43,7 @@ export default function Integrations({ config }: { config: Config }) {
           onClick={async () => {
             try {
               const data = await api<{ url: string }>(
-                "/instagram/authorize",
+                "/boxapi/authorize",
                 "POST",
               );
               window.location.assign(data.url);

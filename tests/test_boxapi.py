@@ -7,6 +7,21 @@ from nexa.config import settings
 from nexa.models import Account, Job
 
 
+def test_boxapi_authorize_returns_configured_login_url(signed, monkeypatch):
+    login_url = "https://api.sendbox.chat/instagram-oauth?token=login-token"
+    monkeypatch.setattr(settings(), "boxapi_login_url", login_url)
+    response = signed.post("/api/boxapi/authorize")
+    assert response.status_code == 200
+    assert response.json() == {"url": login_url}
+
+
+def test_boxapi_authorize_requires_login_url(signed, monkeypatch):
+    monkeypatch.setattr(settings(), "boxapi_login_url", "")
+    response = signed.post("/api/boxapi/authorize")
+    assert response.status_code == 503
+    assert response.json() == {"detail": "boxapi_not_configured"}
+
+
 def test_boxapi_callback_attaches_page_to_current_workspace(signed, db):
     response = signed.get(
         "/api/boxapi/instagram/callback?status=success&username=shop_page&account_id=box-page-1",

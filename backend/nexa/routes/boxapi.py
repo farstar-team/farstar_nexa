@@ -12,6 +12,7 @@ import json
 import re
 import time
 from datetime import UTC, datetime
+from urllib.parse import parse_qs, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -28,6 +29,23 @@ from nexa.security import audit, current_user, workspace
 router = APIRouter(tags=["boxapi"])
 
 _IDENTITY = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
+
+
+@router.post("/api/boxapi/authorize")
+def authorize(user: User = Depends(current_user)):
+    """Return the administrator-configured Sendbox Instagram login URL."""
+
+    del user
+    login_url = integration_settings().boxapi_login_url.strip()
+    parsed = urlsplit(login_url)
+    if (
+        parsed.scheme != "https"
+        or not parsed.netloc
+        or parsed.path.rstrip("/") != "/instagram-oauth"
+        or not parse_qs(parsed.query).get("token")
+    ):
+        raise HTTPException(503, "boxapi_not_configured")
+    return {"url": login_url}
 
 
 def _redirect(status: str) -> RedirectResponse:
