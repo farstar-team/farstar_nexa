@@ -164,15 +164,13 @@ class BoxApiProvider:
     an Account row or returned to the frontend.
     """
 
-    base_url = "https://boxapi.ir"
-
     def _post(self, path: str, payload: dict) -> Receipt:
         token = integration_settings().boxapi_api_key.strip()
         if not token:
             raise DeliveryRejected("credentials_missing")
         try:
             response = httpx.post(
-                self.base_url + path,
+                settings().boxapi_base_url.rstrip("/") + path,
                 headers={"X-Api-Key": token},
                 json=payload,
                 timeout=20,

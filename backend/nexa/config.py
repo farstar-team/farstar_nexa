@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     meta_app_secret: str = ""
     meta_verify_token: str = ""
     meta_api_version: str = "v26.0"
+    boxapi_base_url: str = "https://api.sendbox.chat/api/v1"
     boxapi_api_key: str = ""
     boxapi_webhook_secret: str = ""
     telegram_bot_token: str = ""

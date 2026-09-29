@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.16] - 2026-09-29
+
+- Made the BoxAPI service base URL configurable and aligned the default with the current Sendbox API endpoint.
+
 ## [0.5.15] - 2026-09-29
 
 - Added separate BoxAPI Instagram callback and signed webhook routes.
