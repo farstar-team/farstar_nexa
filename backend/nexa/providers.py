@@ -6,6 +6,7 @@ from typing import Protocol
 import httpx
 
 from nexa.config import settings
+from nexa.integration_config import integration_settings
 from nexa.models import Account
 from nexa.security import decrypt
 
@@ -155,7 +156,86 @@ class InstagramProvider:
             raise DeliveryUnknown("delivery_unknown") from None
 
 
-PROVIDERS: dict[str, Provider] = {"instagram_mock": MockInstagramProvider(), "instagram": InstagramProvider()}
+class BoxApiProvider:
+    """BoxAPI's official Instagram service adapter.
+
+    BoxAPI keeps the API key at the system-integration level and identifies a
+    connected page with the account's external_id.  The key is never copied to
+    an Account row or returned to the frontend.
+    """
+
+    base_url = "https://boxapi.ir"
+
+    def _post(self, path: str, payload: dict) -> Receipt:
+        token = integration_settings().boxapi_api_key.strip()
+        if not token:
+            raise DeliveryRejected("credentials_missing")
+        try:
+            response = httpx.post(
+                self.base_url + path,
+                headers={"X-Api-Key": token},
+                json=payload,
+                timeout=20,
+            )
+        except httpx.HTTPError:
+            raise DeliveryUnknown("delivery_unknown") from None
+        if response.status_code == 429:
+            retry_after = response.headers.get("Retry-After", "60")
+            raise RateLimited(int(retry_after) if retry_after.isdigit() else 60)
+        if response.status_code >= 500:
+            raise DeliveryUnknown("delivery_unknown")
+        if not response.is_success:
+            raise DeliveryRejected("provider_rejected")
+        try:
+            data = response.json()
+        except (ValueError, AttributeError):
+            data = {}
+        message_id = ""
+        if isinstance(data, dict):
+            nested = data.get("data") if isinstance(data.get("data"), dict) else {}
+            message_id = str(
+                data.get("message_id")
+                or data.get("id")
+                or nested.get("message_id")
+                or nested.get("id")
+                or ""
+            )
+        return Receipt(message_id)
+
+    def send(self, account: Account, recipient: str, text: str, key: str, quick_replies=None) -> Receipt:
+        payload = {
+            "account_id": account.external_id,
+            "recipient_id": recipient,
+            "message": text,
+        }
+        if quick_replies:
+            payload["quick_replies"] = quick_replies
+        return self._post("/service/actions/send_message", payload)
+
+    def private_reply(
+        self, account: Account, comment_id: str, text: str, key: str, quick_replies=None
+    ) -> Receipt:
+        payload = {
+            "account_id": account.external_id,
+            "comment_id": comment_id,
+            "message": text,
+        }
+        if quick_replies:
+            payload["quick_replies"] = quick_replies
+        return self._post("/service/actions/private_reply", payload)
+
+    def comment_reply(self, account: Account, comment_id: str, text: str) -> Receipt:
+        return self._post(
+            "/service/actions/reply_comment",
+            {"account_id": account.external_id, "comment_id": comment_id, "message": text},
+        )
+
+
+PROVIDERS: dict[str, Provider] = {
+    "instagram_mock": MockInstagramProvider(),
+    "instagram": InstagramProvider(),
+    "boxapi": BoxApiProvider(),
+}
 
 
 def provider(name: str) -> Provider:

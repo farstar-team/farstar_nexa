@@ -13,6 +13,7 @@ from nexa.db import SessionLocal
 from nexa.routes import (
     admin,
     auth,
+    boxapi,
     commerce,
     content,
     instagram,
@@ -33,6 +34,7 @@ for router in (
     commerce.router,
     admin.router,
     instagram.router,
+    boxapi.router,
     webhooks.router,
     support.router,
     notifications.router,

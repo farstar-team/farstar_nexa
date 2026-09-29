@@ -252,6 +252,10 @@ def check_window(account, execution, conversation):
         occurred = execution.context.get("occurred_at")
         if execution.dry_run:
             created = datetime.fromisoformat(occurred) if occurred else now_utc()
+        elif account.provider == "boxapi":
+            if not occurred:
+                raise DeliveryRejected("comment_timestamp_unavailable")
+            created = datetime.fromisoformat(occurred)
         else:
             # Notification entry.time is not the original comment creation time.
             data = InstagramProvider().comment(account, execution.event_id)

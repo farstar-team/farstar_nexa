@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     meta_app_secret: str = ""
     meta_verify_token: str = ""
     meta_api_version: str = "v26.0"
+    boxapi_api_key: str = ""
+    boxapi_webhook_secret: str = ""
     telegram_bot_token: str = ""
     telegram_bot_username: str = ""
     telegram_webhook_secret: str = ""
@@ -77,8 +79,10 @@ class Settings(BaseSettings):
         return {
             "base_url": self.base_url,
             "instagram_callback": self.base_url + "/api/instagram/callback",
+            "boxapi_instagram_callback": self.base_url + "/api/boxapi/instagram/callback",
             "google_callback": self.base_url + "/api/auth/google/callback",
             "meta_webhook": self.base_url + "/webhooks/meta",
+            "boxapi_webhook": self.base_url + "/webhooks/boxapi",
             "telegram_webhook": self.base_url + "/webhooks/telegram",
         }
 

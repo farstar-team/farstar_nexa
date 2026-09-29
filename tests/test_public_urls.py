@@ -14,8 +14,10 @@ def test_domain_change_updates_owner_urls_and_oauth(owner, monkeypatch, base):
     assert urls == {
         "base_url": base,
         "instagram_callback": base + "/api/instagram/callback",
+        "boxapi_instagram_callback": base + "/api/boxapi/instagram/callback",
         "google_callback": base + "/api/auth/google/callback",
         "meta_webhook": base + "/webhooks/meta",
+        "boxapi_webhook": base + "/webhooks/boxapi",
         "telegram_webhook": base + "/webhooks/telegram",
     }
     authorized = owner.post("/api/instagram/authorize")

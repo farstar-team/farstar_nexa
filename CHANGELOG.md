@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.15] - 2026-09-29
+
+- Added separate BoxAPI Instagram callback and signed webhook routes.
+- Added encrypted BoxAPI API-key and webhook-secret settings with provider actions for messages, private replies, and comment replies.
+
 ## [0.5.14] - 2026-09-28
 
 - Added standard `Date` and `Message-ID` headers to outgoing email so the mail server accepts application notifications.

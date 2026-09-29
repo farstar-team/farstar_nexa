@@ -7,6 +7,8 @@ const names = [
   "meta_app_id",
   "meta_app_secret",
   "meta_verify_token",
+  "boxapi_api_key",
+  "boxapi_webhook_secret",
   "telegram_bot_token",
   "telegram_bot_username",
   "telegram_webhook_secret",

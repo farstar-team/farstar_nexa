@@ -4,6 +4,8 @@ export const fa: Record<string, string> = {
   meta_app_id: "شناسه برنامه Instagram",
   meta_app_secret: "رمز برنامه Instagram",
   meta_verify_token: "توکن تأیید وب‌هوک Meta",
+  boxapi_api_key: "توکن API دایرکت BoxAPI",
+  boxapi_webhook_secret: "رمز Webhook دایرکت BoxAPI",
   telegram_bot_token: "توکن ربات تلگرام",
   telegram_bot_username: "نام کاربری ربات (بدون @)",
   telegram_webhook_secret: "رمز وب‌هوک تلگرام (حداقل ۳۲ نویسه)",
