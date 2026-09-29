@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.18] - 2026-09-29
+
+- Show Instagram as active in the administrator status when the Sendbox connection is fully configured.
+
 ## [0.5.17] - 2026-09-29
 
 - Added the Sendbox Instagram login action to the Connections page and made its administrator-configured login URL available through a protected API route.

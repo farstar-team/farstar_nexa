@@ -304,6 +304,7 @@ def status(user: User = Depends(require("system.manage")), db: Session = Depends
     host_status = None
     if host.is_file() and time.time() - host.stat().st_mtime < 120:
         host_status = json.loads(host.read_text())
+    config = integration_settings()
     return {
         "version": version(),
         "counts": counts,
@@ -319,8 +320,11 @@ def status(user: User = Depends(require("system.manage")), db: Session = Depends
         "host": host_status,
         "base_url": settings().base_url,
         "mock_mode": settings().mock_mode,
-        "meta_configured": bool(integration_settings().meta_app_id),
-        "telegram_configured": bool(integration_settings().telegram_bot_token),
+        "meta_configured": bool(config.meta_app_id),
+        "boxapi_configured": bool(
+            config.boxapi_login_url and config.boxapi_api_key and config.boxapi_webhook_secret
+        ),
+        "telegram_configured": bool(config.telegram_bot_token),
     }
 
 

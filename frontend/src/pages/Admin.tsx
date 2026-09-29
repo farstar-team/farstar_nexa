@@ -46,6 +46,7 @@ type Status = {
   base_url: string;
   telegram_configured: boolean;
   meta_configured: boolean;
+  boxapi_configured: boolean;
   host?: {
     domain: string;
     dns: string[];
@@ -194,7 +195,9 @@ export default function Admin({ user }: { user: User }) {
                     <span>{t("instagram")}</span>
                     <Badge
                       value={
-                        status.data.meta_configured ? "active" : "inactive"
+                        status.data.meta_configured || status.data.boxapi_configured
+                          ? "active"
+                          : "inactive"
                       }
                     />
                   </div>
